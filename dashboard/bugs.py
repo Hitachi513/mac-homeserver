@@ -218,6 +218,48 @@ def gh_sync(on_new=None):
             if i["number"] not in known and i["state"] == "OPEN":
                 on_new(i)
     _ghc.update(items=out, error=None, at=time.time(), known={i["number"] for i in out})
+    _sync_advisories(on_new)
+
+
+# ---------------- private security reports (GitHub "Report a vulnerability") ----------------
+# Reporters use GitHub's private form; the owner sees and triages them here, never in public.
+ADV_STATE = {"triage": "待確認", "draft": "處理中", "published": "已公開修正", "closed": "已關閉"}
+_advc = {"items": [], "error": None, "known": None}
+
+
+def _sync_advisories(on_new=None):
+    try:
+        raw = json.loads(_gh(["api", f"repos/{REPO}/security-advisories?per_page=50&sort=updated"]))
+    except Exception as e:
+        _advc.update(error=str(e))
+        return
+    out = []
+    for a in raw:
+        sub = a.get("submission") or {}
+        reporter = next((c.get("user", {}).get("login") for c in a.get("credits_detailed") or [] if c.get("user")), None) \
+            or (a.get("author") or {}).get("login")
+        out.append({"id": a["ghsa_id"], "title": a.get("summary") or "(沒有標題)", "body": a.get("description") or "",
+                    "state": a.get("state", "triage"), "severity": a.get("severity") or "", "url": a.get("html_url"),
+                    "created": a.get("created_at"), "updated": a.get("updated_at"), "reporter": reporter or "（匿名）",
+                    "private_report": bool(sub)})
+    known = _advc["known"]
+    if known is not None and on_new:
+        for a in out:
+            if a["id"] not in known:
+                on_new({"number": a["id"], "title": a["title"], "author": a["reporter"], "security": True})
+    _advc.update(items=out, error=None, known={a["id"] for a in out})
+
+
+def advisories():
+    return {"items": _advc["items"], "error": _advc["error"], "states": ADV_STATE}
+
+
+def advisory_set_state(ghsa, state):
+    if state not in ("draft", "closed") or not re.match(r"^GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}$", str(ghsa)):
+        raise ValueError("狀態不正確")
+    _gh(["api", "-X", "PATCH", f"repos/{REPO}/security-advisories/{ghsa}", "-f", f"state={state}"])
+    _ghc["at"] = 0
+    return {"ok": True}
 
 
 def gh_list(max_age=600):

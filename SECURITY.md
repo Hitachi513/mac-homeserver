@@ -28,4 +28,13 @@
 
 ## 回報漏洞
 
-請**不要**開公開 issue。請到這個 repo 的 **Security → Report a vulnerability** 私下回報。
+**請不要開公開的 issue，也不要在任何公開的地方討論細節**，修好之前壞人也看得到。
+
+請用「私下回報」，只有維護者看得到：
+
+1. 打開 <https://github.com/Hitachi513/mac-homeserver/security/advisories/new>（需要登入 GitHub）
+2. **Title**：用一句話寫是什麼問題，例如「成員網頁可以不用密碼直接看到資料」
+3. **Description**：寫怎麼發生的、影響什麼，最好附上重現步驟
+4. 其他欄位可以不填，按最下面的 **Submit report**
+
+維護者會收到通知，通常幾天內會在同一頁回覆你。修好後會發新版本，並在版本說明裡感謝你（如果你願意）。

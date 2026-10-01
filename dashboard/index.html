@@ -724,6 +724,8 @@ html.no-sr .feat-sr { display: none !important; }
 .bst { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--fill); white-space: nowrap; }
 .bst.new { color: #fff; background: var(--accent); } .bst.doing { color: #fff; background: #e08a00; } .bst.fixed { color: #fff; background: var(--good); }
 .bst.wontfix, .bst.dup, .bst.closed { color: var(--text-2); }
+.bst.sec { color: #fff; background: var(--bad); }
+.sec-tag { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 800; color: var(--bad); margin-right: 4px; }
 .bug-desc { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.6; background: var(--fill); border-radius: 12px; padding: 10px 12px; }
 .bug-shots { display: flex; gap: 8px; flex-wrap: wrap; }
 .bug-shots img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; cursor: zoom-in; background: var(--fill); }
@@ -904,7 +906,7 @@ html.no-sr .feat-sr { display: none !important; }
   </div>
   <div class="pane stack" id="mem-bugs" hidden>
     <div class="card"><div class="chipbtns" id="bugFilter"><button class="chipbtn on" data-bf="open">待處理</button><button class="chipbtn" data-bf="done">已結束</button><button class="chipbtn" data-bf="all">全部</button></div>
-      <div class="chipbtns" id="bugSrc" style="margin-top:8px"><button class="chipbtn on" data-bs="all">全部來源</button><button class="chipbtn" data-bs="m">家人</button><button class="chipbtn" data-bs="g">GitHub</button></div></div>
+      <div class="chipbtns" id="bugSrc" style="margin-top:8px"><button class="chipbtn on" data-bs="all">全部來源</button><button class="chipbtn" data-bs="m">家人</button><button class="chipbtn" data-bs="g">GitHub</button><button class="chipbtn" data-bs="s">🔒 資安</button></div></div>
     <div class="card list" id="bugList"><div class="skel"><i></i><i></i><i></i></div></div>
     <div class="small muted pad" id="bugFoot"></div>
   </div>
@@ -2324,29 +2326,33 @@ function bugItems() {
   (d.github.items || []).forEach(i => out.push({ k: "g", id: i.number, title: i.title, who: i.author, at: Date.parse(i.created) / 1000, up: Date.parse(i.updated) / 1000,
     open: i.state === "OPEN", st: i.state === "OPEN" ? (i.labels.includes("bug") ? "new" : "new") : i.reason === "NOT_PLANNED" ? "wontfix" : "fixed",
     stl: i.state === "OPEN" ? "待處理" : i.reason === "NOT_PLANNED" ? "不處理" : "已關閉", meta: `#${i.number}${i.labels.length ? "・" + i.labels.join("、") : ""}${i.comments ? `・${i.comments} 則留言` : ""}`, url: i.url }));
+  const sec = d.security || { items: [], states: {} };
+  sec.items.forEach(a => out.push({ k: "s", id: a.id, title: a.title, who: a.reporter, at: Date.parse(a.created) / 1000, up: Date.parse(a.updated) / 1000,
+    open: ["triage", "draft"].includes(a.state), st: "sec", stl: sec.states[a.state] || a.state, sev: "security",
+    meta: `私下回報${a.severity ? "・嚴重度 " + (SEV_ZH[a.severity] || a.severity) : ""}`, url: a.url }));
   return out;
 }
 function renderBugs() {
   const all = bugItems(), open = all.filter(x => x.open);
-  $("#bugCount").textContent = open.filter(x => x.k === "g" || x.st === "new").length || "";
-  const list = all.filter(x => (bugF === "all" || (bugF === "open") === x.open) && (bugS === "all" || bugS === x.k)).sort((a, b) => (b.open - a.open) || (b.sev === "blocker") - (a.sev === "blocker") || b.up - a.up);
+  $("#bugCount").textContent = open.filter(x => x.k !== "m" || x.st === "new").length || "";
+  const list = all.filter(x => (bugF === "all" || (bugF === "open") === x.open) && (bugS === "all" || bugS === x.k)).sort((a, b) => (b.open - a.open) || (b.k === "s") - (a.k === "s") || (b.sev === "blocker") - (a.sev === "blocker") || b.up - a.up);
   $("#bugList").innerHTML = list.length ? list.map(x => {
     const pr = x.k === "m" ? (BUGS.profiles[x.who] || {}) : null;
-    const av = x.k === "g" ? `<span class="badge devbadge" style="--c:#24292f">${ghIcon()}</span>` : memAvatar({ login: x.who, profile: pr, active: true });
-    return `<button class="bugrow" data-bug="${x.k}:${esc(String(x.id))}">${av}<span class="grow"><span class="t">${x.sev === "blocker" && x.open ? `<span style="color:var(--bad)">${icon("alert")}</span> ` : ""}${esc(x.title)}</span>
-      <span class="s">${esc(x.k === "g" ? "GitHub・" + x.who : (pr && pr.nickname) || x.who)}・${ago(x.at)}・${esc(x.meta)}</span></span><span class="bst ${x.open ? x.st : "closed"}">${esc(x.stl)}</span></button>`; }).join("")
+    const av = x.k === "s" ? `<span class="badge devbadge" style="--c:#ff453a">${icon("lock")}</span>` : x.k === "g" ? `<span class="badge devbadge" style="--c:#24292f">${ghIcon()}</span>` : memAvatar({ login: x.who, profile: pr, active: true });
+    return `<button class="bugrow" data-bug="${x.k}:${esc(String(x.id))}">${av}<span class="grow"><span class="t">${x.k === "s" ? `<span class="sec-tag">${icon("lock")}資安</span>` : ""}${x.sev === "blocker" && x.open ? `<span style="color:var(--bad)">${icon("alert")}</span> ` : ""}${esc(x.title)}</span>
+      <span class="s">${esc(x.k === "s" ? "私下回報・" + x.who : x.k === "g" ? "GitHub・" + x.who : (pr && pr.nickname) || x.who)}・${ago(x.at)}・${esc(x.meta)}</span></span><span class="bst ${x.k === "s" && x.open ? "sec" : x.open ? x.st : "closed"}">${esc(x.stl)}</span></button>`; }).join("")
     : `<div class="empty">${bugF === "open" ? "沒有待處理的回報 🎉" : "沒有回報"}</div>`;
   const g = BUGS.github;
   $("#bugSrc").hidden = !!g.off;
   if (g.off) { $("#bugFoot").innerHTML = `家人在自己的專屬網頁按「回報問題」，有新回報會推播通知你。<br>想同時管理 GitHub 上的回報，在 config.json 設定 <code>github_repo</code>。`; return; }
   $("#bugFoot").innerHTML = `${ghIcon()} GitHub：${g.error ? `<span style="color:var(--bad)">讀不到（${esc(g.error)}）</span>` : `${(g.items || []).length} 個 issue，${g.at ? ago(g.at) : "—"}更新`}
     ・<a href="https://github.com/${esc(g.repo)}/issues" target="_blank" rel="noopener">在 GitHub 打開</a>・<a href="#" id="bugRefresh">立即更新</a>
-    <br>家人在自己的專屬網頁按「回報問題」；其他人在 GitHub 用中文表單回報。有新回報會推播通知你。`;
+    <br>家人在自己的專屬網頁按「回報問題」；其他人在 GitHub 用中文表單回報。🔒 資安漏洞的私下回報也會出現在這裡（只有你看得到），並用緊急推播通知你。`;
 }
 function openBug(key) {
   const [k, id] = key.split(":"); bugCur = { k, id };
   $("#bugSheet").hidden = false; $("#bugBody").scrollTop = 0;
-  if (k === "m") renderMemberBug(); else renderGhBug();
+  if (k === "m") renderMemberBug(); else if (k === "s") renderSecBug(); else renderGhBug();
 }
 function renderMemberBug() {
   const d = BUGS, b = d.member.find(x => x.id === bugCur.id); if (!b) { $("#bugSheet").hidden = true; return; }
@@ -2364,6 +2370,27 @@ function renderMemberBug() {
       <textarea id="bugReply" placeholder="回覆他（會顯示在他的專屬網頁上）"></textarea><div class="btns" style="margin-top:6px"><button class="btn sm primary" id="bugReplyBtn">${icon("send")}送出回覆</button></div></div>
     <div class="sect"><div class="st">私人筆記（只有你看得到）</div><textarea id="bugNote" placeholder="例如：原因、怎麼修的">${esc(b.note || "")}</textarea>
       <div class="btns" style="margin-top:6px"><button class="btn sm" id="bugNoteBtn">儲存筆記</button><button class="btn sm danger" id="bugDel">${icon("trash")}刪除這個回報</button></div></div></div>`;
+}
+const SEV_ZH = { low: "低", medium: "中", high: "高", critical: "非常嚴重" };
+function renderSecBug() {
+  const sec = BUGS.security || { items: [], states: {} }, a = sec.items.find(x => x.id === bugCur.id); if (!a) { $("#bugSheet").hidden = true; return; }
+  $("#bugBadge").innerHTML = `<span class="badge devbadge" style="--c:#ff453a">${icon("lock")}</span>`; $("#bugTitle").textContent = "資安回報（不公開）";
+  $("#bugBody").innerHTML = `<div class="bug-sheet">
+    <div class="banner bad" style="margin:4px 0 12px">${icon("lock")} 這是私下回報：只有你和回報的人看得到。修好之前請不要公開討論細節。</div>
+    <div class="sect"><div style="font-size:18px;font-weight:800;overflow-wrap:anywhere">${esc(a.title)}</div>
+      <div class="small muted" style="margin:4px 0 10px">${esc(a.reporter)}・${new Date(a.created).toLocaleString("zh-TW", { hour12: false })}・${esc(sec.states[a.state] || a.state)}${a.severity ? "・嚴重度 " + esc(SEV_ZH[a.severity] || a.severity) : ""}</div>
+      <div class="bug-desc">${esc(a.body) || "（沒有內容）"}</div></div>
+    <div class="sect"><div class="st">處理狀態</div><div class="btns">
+      ${a.state === "triage" ? `<button class="btn sm primary" data-adv="draft">${icon("tick")}確認收到，開始處理</button>` : ""}
+      ${["triage", "draft"].includes(a.state) ? `<button class="btn sm" data-adv="closed">關閉（不是漏洞，或已經處理好）</button>` : `<span class="small muted">這則已經${esc(sec.states[a.state] || a.state)}</span>`}</div></div>
+    <div class="sect"><div class="st">回覆回報的人</div>
+      <div class="small muted" style="margin-bottom:8px">GitHub 規定私下回報的對話只能在 GitHub 上進行。按下面的按鈕會直接打開這一則，在最下面的留言框打字回覆就好（只有你們兩個看得到）。</div>
+      <div class="btns"><a class="btn sm primary" href="${esc(a.url)}" target="_blank" rel="noopener">${ghIcon()}打開這則並回覆</a></div></div>
+    <div class="sect"><div class="st">建議的處理步驟</div><ol class="small" style="padding-left:18px;margin:0;line-height:1.7">
+      <li>先按「確認收到」，並在 GitHub 回一句「收到，正在看」</li>
+      <li>把內容貼給 Claude，請他判斷是不是真的漏洞、怎麼修</li>
+      <li>修好後跟 Claude 說「發新版本」，再回覆對方「已在 vX.X.X 修正」</li>
+      <li>最後按「關閉」</li></ol></div></div>`;
 }
 async function renderGhBug() {
   const n = bugCur.id;
@@ -2400,6 +2427,7 @@ document.addEventListener("click", async e => {
   if (t.closest("#bugNoteBtn")) return upd({ note: $("#bugNote").value }, "筆記已儲存");
   const del = t.closest("#bugDel"); if (del) { if (del.dataset.confirm !== "1") { del.dataset.confirm = "1"; del.textContent = "確定刪除？"; return; }
     try { await act("bug_delete", { id: bugCur.id }, "已刪除"); $("#bugSheet").hidden = true; bugCur = null; loadBugs(); } catch {} return; }
+  const ad = t.closest("[data-adv]"); if (ad) { try { await act("adv_state", { id: bugCur.id, state: ad.dataset.adv }, ad.dataset.adv === "draft" ? "已標為處理中" : "已關閉"); await loadBugs(true); renderSecBug(); } catch {} return; }
   const gs = t.closest("[data-ghs]"); if (gs) { try { await act("gh_state", { number: bugCur.id, state: gs.dataset.ghs }, "GitHub 已更新"); await loadBugs(true); renderGhBug(); } catch {} return; }
   const gl = t.closest("[data-ghl]"); if (gl) { try { await act("gh_label", { number: bugCur.id, label: gl.dataset.ghl, on: !gl.classList.contains("on") }, "標籤已更新"); renderGhBug(); } catch {} return; }
   if (t.closest("#ghReplyBtn")) { const v = $("#ghReply").value.trim(); if (!v) return; try { await act("gh_comment", { number: bugCur.id, text: v }, "已在 GitHub 公開回覆"); renderGhBug(); loadBugs(); } catch {} return; }

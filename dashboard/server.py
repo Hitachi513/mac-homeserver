@@ -633,6 +633,14 @@ def action(name, arg, who):
             return bugs.owner_delete(str(arg.get("id")))
         except ValueError as e:
             return {"ok": False, "error": str(e)}
+    if name == "adv_state":
+        try:
+            r = bugs.advisory_set_state(str(arg.get("id")), str(arg.get("state")))
+        except (ValueError, RuntimeError, subprocess.SubprocessError) as e:
+            return {"ok": False, "error": f"GitHub：{e}"}
+        bugs.gh_sync()
+        log_event(who, f"資安回報 {arg.get('id')} → {arg.get('state')}")
+        return r
     if name in ("gh_comment", "gh_state", "gh_label", "gh_refresh"):
         try:
             if name == "gh_comment":
@@ -1154,7 +1162,8 @@ def policy_scheduler():
                 except Exception:
                     pass
             if n % 10 == 1:
-                bugs.gh_sync(on_new=lambda i: notify.send("bug", "GitHub 有新的問題回報", f"#{i['number']} {i['title']}（{i['author']}）", "/#members"))
+                bugs.gh_sync(on_new=lambda i: notify.send("security", "🔒 收到資安漏洞的私下回報", f"{i['title']}（{i['author']}）：打開控制台 → 成員 → 回報", "/#members", urgent=True)
+                             if i.get("security") else notify.send("bug", "GitHub 有新的問題回報", f"#{i['number']} {i['title']}（{i['author']}）", "/#members"))
             macstats.record()
             _policy_state["last_error"] = None
         except Exception as e:
@@ -3045,7 +3054,7 @@ class Handler(BaseHTTPRequestHandler):
                     if q.get("refresh", [""])[0] == "1":
                         bugs._ghc["at"] = 0
                     members = {p["login"]: portalauth.profile(p["login"]) for p in load_members()["people"]}
-                    self.send_json({"ok": True, "member": bugs.all_member_bugs(), "github": bugs.gh_list(), "profiles": members,
+                    self.send_json({"ok": True, "member": bugs.all_member_bugs(), "github": bugs.gh_list(), "security": bugs.advisories(), "profiles": members,
                                     "statuses": bugs.STATUS, "priorities": bugs.PRIORITY, "areas": bugs.AREA, "severities": bugs.SEVERITY})
             elif u.path == "/api/bug_issue":
                 if self.role != "owner":
