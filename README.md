@@ -74,6 +74,32 @@ iPhone ──Tailscale──▶ tailscale serve :443  ──▶ 控制台   127.
 - 對網路公開的只有成員網頁（128 位元隨機網址＋限速＋自動封鎖）和選用的 Shadowrocket 入口
 - 控制台裡的「設定 → 安全」可以隨時看安全分數，並對自己跑一次攻擊測試
 
+## 回報問題／建議
+
+| 你是… | 到哪裡回報 |
+|---|---|
+| 🐞 遇到 bug、安裝失敗、跟說明不一樣 | [開一個「回報問題」](https://github.com/Hitachi513/mac-homeserver/issues/new?template=bug_report.yml) |
+| 💡 想要新功能、覺得哪裡可以更好用 | [開一個「建議新功能」](https://github.com/Hitachi513/mac-homeserver/issues/new?template=feature_request.yml) |
+| 🔒 發現安全漏洞 | **不要公開**，請[私下回報](https://github.com/Hitachi513/mac-homeserver/security/advisories/new) |
+| 👨‍👩‍👧 你是某個家庭的成員（別人幫你架的） | 在你的**專屬網頁**按「回報問題」，會直接送給幫你架設的人 |
+
+需要 GitHub 帳號（免費）。表單是中文的，照著填就好。詳細說明請看 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+**回報前請先：**
+1. 到 [Issues](https://github.com/Hitachi513/mac-homeserver/issues?q=is%3Aissue) 搜尋看看，是不是有人回報過了（有的話在下面留言 +1 並補充你的情況）
+2. 更新到最新版再試一次：`cd ~/homeserver && git pull`，然後重新啟動控制台
+3. **把個人資料遮掉**：Tailscale 網址（`xxx.ts.net`）、IP、成員名字、密碼、專屬網址都不要貼上來
+
+**附上這些，會修得比較快：**
+```bash
+# 版本
+cd ~/homeserver && git describe --tags
+# macOS 版本和晶片
+sw_vers -productVersion; uname -m
+# 控制台最後 50 行記錄（貼上前請先檢查有沒有個人資料）
+tail -n 50 ~/homeserver/dashboard/panel.log
+```
+
 ## ⚠️ 法律注意
 
 Shadowrocket 功能本質上是代理伺服器。**在部分國家或地區，架設或使用這類服務可能違法。**
