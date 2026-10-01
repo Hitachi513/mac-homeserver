@@ -2,6 +2,9 @@
 # This folder also holds member data, keys, passwords and logs — they must never reach GitHub.
 *
 !.gitignore
+!.github/
+!.github/ISSUE_TEMPLATE/
+!.github/ISSUE_TEMPLATE/*.yml
 !README.md
 !LICENSE
 !SECURITY.md

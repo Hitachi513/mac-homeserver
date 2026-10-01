@@ -1,0 +1,73 @@
+name: 🐞 回報問題（Bug）
+description: 有東西壞掉、跟說明不一樣、或安裝失敗
+title: "[問題] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        謝謝你回報！填得越清楚，越快能修好。
+        ⚠️ **安全漏洞請不要在這裡公開**，請到 Security → Report a vulnerability 私下回報。
+        ⚠️ 貼上記錄檔或截圖前，請先把**網址、IP、密碼、成員名字**遮掉。
+  - type: dropdown
+    id: area
+    attributes:
+      label: 哪個部分有問題？
+      options:
+        - 安裝（install.sh）
+        - 控制台
+        - 成員專屬網頁
+        - 雲端硬碟
+        - 擋廣告（AdGuard）
+        - Tailscale／連線
+        - Shadowrocket
+        - 安全監測
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 發生了什麼事？
+      description: 你看到什麼？原本預期會怎樣？
+      placeholder: 例如：在雲端上傳照片時，進度跑到 100% 後顯示「上傳中斷」，照片沒有出現。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 怎麼重現？
+      description: 一步一步寫下怎麼讓問題再發生一次
+      placeholder: |
+        1. 打開控制台 → 雲端
+        2. 點「上傳」，選一張 HEIC 照片
+        3. 看到錯誤
+  - type: input
+    id: macos
+    attributes:
+      label: macOS 版本和 Mac 型號
+      placeholder: 例如：macOS 26.2，MacBook Air M1
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: 用什麼裝置／瀏覽器看到問題？
+      placeholder: 例如：iPhone 15 Safari（加入主畫面）、Chrome 電腦版
+  - type: input
+    id: version
+    attributes:
+      label: 你用的版本
+      description: Releases 的版本號，或 git log 第一行
+      placeholder: 例如：v1.0.0
+  - type: textarea
+    id: logs
+    attributes:
+      label: 記錄檔（選填）
+      description: "~/homeserver/dashboard/panel.log 最後幾行（請先遮掉個人資料）"
+      render: text
+  - type: textarea
+    id: shots
+    attributes:
+      label: 截圖（選填）
+      description: 可以直接把圖片拖進來
