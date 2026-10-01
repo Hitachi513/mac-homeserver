@@ -519,8 +519,10 @@ document.addEventListener("change", e => {
   BUGF.shots = [...e.target.files].slice(0, 3);
   if (e.target.files.length > 3) toast("最多 3 張，只取前 3 張", "alert");
   // data: URLs (the page's CSP doesn't allow blob: images)
-  $("#bugShotPrev").innerHTML = "";
-  BUGF.shots.forEach(f => { const r = new FileReader(); r.onload = () => { const i = new Image(); i.alt = ""; i.src = r.result; $("#bugShotPrev").appendChild(i); }; r.readAsDataURL(f); });
+  // data: URLs (the page's CSP doesn't allow blob: images); a generation number drops previews from an older pick
+  const gen = (BUGF.gen = (BUGF.gen || 0) + 1), box = $("#bugShotPrev");
+  box.innerHTML = BUGF.shots.map(() => `<img alt="">`).join("");
+  BUGF.shots.forEach((f, k) => { const r = new FileReader(); r.onload = () => { if (BUGF.gen === gen && box.children[k]) box.children[k].src = r.result; }; r.readAsDataURL(f); });
 });
 
 // ---------- messages ----------
