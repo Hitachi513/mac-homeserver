@@ -1,0 +1,10 @@
+{
+  "name": "家用控制台",
+  "short_name": "控制台",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#eef1f8",
+  "theme_color": "#eef1f8",
+  "icons": [{ "src": "/static/icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }]
+}

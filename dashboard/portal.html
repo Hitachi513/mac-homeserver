@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="我的連線">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#eef1f8" id="themeColor">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<script>try{if(localStorage.getItem("big")==="1")document.documentElement.classList.add("big");const t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;}catch(e){}</script>
+<title>我的連線</title>
+<style>
+/*SHARED_STYLE*/
+/* ===== portal-only ===== */
+body { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+main { max-width: 720px; }
+.qr { background: #fff; padding: 12px; border-radius: 18px; display: inline-block; margin: 6px 0 10px; box-shadow: var(--shadow); }
+.qr svg { display: block; width: 220px; height: 220px; }
+.center { text-align: center; }
+ol.steps { margin: 6px 0 0; padding-left: 20px; } ol.steps li { margin: 6px 0; }
+.kv .row .grow { font-size: 13px; color: var(--text-2); }
+.chipline { display: flex; flex-wrap: wrap; gap: 6px; }
+.mini .v { white-space: normal; overflow-wrap: anywhere; }
+.tiles4 > .tile:only-child { grid-column: 1 / -1; }
+html.big main, html.big header { zoom: 1.22; }
+html.big .hero .chips { flex-wrap: wrap; overflow: visible; }
+.theme-btn.on { background: var(--accent); color: #fff; }
+.msg-kinds { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.msgbox textarea { width: 100%; min-height: 76px; resize: vertical; font: inherit; font-size: 16px; }
+.msg-text { white-space: pre-wrap; word-break: break-word; margin-top: 4px; font-size: 14px; }
+.urlbox { font: 12px ui-monospace, Menlo, monospace; word-break: break-all; padding: 10px 12px; border-radius: 12px; background: var(--fill); margin: 8px 0; user-select: all; -webkit-user-select: all; }
+.speed-out { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.readonly { font-size: 11px; font-weight: 700; letter-spacing: .5px; padding: 3px 8px; border-radius: 99px; background: var(--fill); color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="liveDot"></span>
+  <div class="titles"><h1>我的連線</h1><div class="subtitle" id="pageSub"></div></div>
+  <button class="theme-btn" id="bigBtn" title="大字模式" aria-label="大字模式"></button>
+  <button class="theme-btn" id="themeBtn" title="切換深色 / 淺色" aria-label="切換深色 / 淺色"></button>
+</header>
+<main>
+  <div class="stack" id="app"><div class="card"><div class="skel"><i></i><i></i><i></i></div></div><div class="card"><div class="skel"><i></i><i></i><i></i></div></div></div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtB = b => { if (b == null) return "—"; const u = ["B","KB","MB","GB","TB"]; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return (i ? b.toFixed(1) : b) + " " + u[i]; };
+// Lucide-style line icons (ISC)
+const IC = {
+  shield: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4",
+  rocket: "M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09zM12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2zM9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5",
+  wifi: "M5 12.55a11 11 0 0 1 14 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01",
+  calendar: "M3 4h18v18H3zM16 2v4M8 2v4M3 10h18",
+  user: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  alarm: "M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4l2 2M5 3 2 6M22 6l-3-3",
+  globe: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20",
+  laptop: "M4 5h16v10H4zM2 19h20",
+  phone: "M7 2h10v20H7zM12 18h.01",
+  ban: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM4.9 4.9l14.2 14.2",
+  activity: "M22 12h-4l-3 9L9 3l-3 9H2",
+  down: "M12 5v14M19 12l-7 7-7-7",
+  up: "M12 19V5M5 12l7-7 7 7",
+  clipboard: "M9 2h6v4H9zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2",
+  ok: "M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3",
+  alert: "M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",
+  help: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01",
+  sliders: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6",
+  sun: "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42",
+  moon: "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z",
+  auto: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 2v20",
+  lock: "M5 11h14v10H5zM7 11V7a5 5 0 0 1 10 0v4",
+  refresh: "M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15",
+  cloud: "M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z",
+  home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
+  folder: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
+  folderplus: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 11v6M9 14h6",
+  upload: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",
+  download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
+  more: "M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z",
+  edit: "M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z",
+  trash: "M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2",
+  x: "M18 6 6 18M6 6l12 12",
+  image: "M3 3h18v18H3zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21",
+  film: "M2 2h20v20H2zM7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5",
+  music: "M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
+  file: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6",
+  archive: "M21 8v13H3V8M1 3h22v5H1zM10 12h4",
+
+  chevl: "M15 18l-6-6 6-6",
+  chevr: "M9 18l6-6-6-6",
+  link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
+  play: "M6 3l14 9-14 9z",
+  grid: "M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z",
+  list: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
+  search: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35",
+  type: "M4 7V4h16v3M9 20h6M12 4v16",
+  camera: "M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  send: "M22 2 11 13M22 2l-7 20-4-9-9-4z",
+  speed: "M12 14l4-4M3.34 19a10 10 0 1 1 17.32 0M12 14h.01",
+  inbox: "M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z",
+  reply: "M9 17l-5-5 5-5M20 18v-2a4 4 0 0 0-4-4H4",
+  clock: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2",
+  tick: "M20 6 9 17l-5-5",
+  sort: "M3 6h13M3 12h9M3 18h5M17 8V20M17 20l-3-3M17 20l3-3",
+  check: "M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3",
+  move: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM10 13h6M13 10l3 3-3 3",
+  info: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01",
+  code: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M10 13l-2 2 2 2M14 13l2 2-2 2",
+};
+const C = { blue: "#0a84ff", green: "#30d158", orange: "#ff9f0a", red: "#ff453a", purple: "#bf5af2", pink: "#ff375f", teal: "#32ade6", indigo: "#5e5ce6", gray: "#8e8e93", mint: "#00c7be", yellow: "#ffcc00" };
+const icon = n => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="${IC[n] || ""}"/></svg>`;
+const badge = (n, c) => `<span class="badge" style="--c:${C[c] || c}">${icon(n)}</span>`;
+const card = (ic, color, title, body, extra = "") => `<div class="card" ${extra}><h2>${badge(ic, color)}${esc(title)}</h2>${body}</div>`;
+const kvrow = (k, v) => `<div class="row"><div class="grow">${k}</div><div style="text-align:right">${v}</div></div>`;
+const pill = (t, cls = "") => `<span class="pill ${cls}">${t}</span>`;
+function dayText(ds, W) {
+  const k = [...ds].sort((a, b) => a - b).join(",");
+  if (ds.length === 7) return "每天";
+  if (k === "0,1,2,3,4") return "平日（週一至週五）";
+  if (k === "5,6") return "週末";
+  const run = ds.length > 2 && ds.every((v, i, a) => i === 0 || v === a[i - 1] + 1);
+  return run ? `週${W[ds[0]]}至週${W[ds[ds.length - 1]]}` : "週" + ds.map(x => W[x]).join("、");
+}
+const mini = rows => `<div class="mini-grid">${rows.map(([k, v]) => `<div class="mini"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>`;
+function ringTile(label, ic, c, value, sub, pct) {
+  const p = pct == null ? null : Math.max(0, Math.min(100, pct)), R = 40, L = 2 * Math.PI * R;
+  return `<div class="card tile ring" style="--c:${C[c]}">
+    <div class="ringbox"><svg viewBox="0 0 96 96"><circle class="trk" cx="48" cy="48" r="${R}"/>${p != null && p >= 0.5 ? `<circle class="val" cx="48" cy="48" r="${R}" stroke-dasharray="${(p / 100 * L).toFixed(1)} ${L.toFixed(1)}"/>` : ""}</svg>
+      <div class="rv ${String(value).length > 4 ? "small" : ""}">${value}</div></div>
+    <div class="rl">${badge(ic, c)}${label}</div><div class="sub">${sub}</div></div>`;
+}
+function toast(msg, ic) { const t = $("#toast"); t.innerHTML = (ic ? icon(ic) + " " : "") + esc(msg); t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2200); }
+
+// ---------- theme ----------
+const THEME_ICON = { auto: icon("auto"), light: icon("sun"), dark: icon("moon") };
+const currentTheme = () => document.documentElement.dataset.theme || "auto";
+function syncTheme() {
+  const dark = currentTheme() === "dark" || (currentTheme() === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+  $("#themeColor").content = dark ? "#05060a" : "#eef1f8"; $("#themeBtn").innerHTML = THEME_ICON[currentTheme()];
+}
+$("#themeBtn").onclick = () => { const next = { auto: "light", light: "dark", dark: "auto" }[currentTheme()];
+  if (next === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("theme", next); } catch {} syncTheme(); };
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncTheme); syncTheme();
+// ---------- large text (for elders) ----------
+function syncBig() { const on = document.documentElement.classList.contains("big"); $("#bigBtn").innerHTML = icon("type"); $("#bigBtn").classList.toggle("on", on); $("#bigBtn").setAttribute("aria-pressed", on); }
+$("#bigBtn").onclick = () => { const on = document.documentElement.classList.toggle("big"); try { localStorage.setItem("big", on ? "1" : "0"); } catch {} syncBig(); toast(on ? "已切換成大字" : "已切換成一般大小", "type"); };
+syncBig();
+
+// ---------- data ----------
+const BASE = location.pathname.endsWith("/") ? location.pathname : location.pathname + "/";
+const loadJs = f => new Promise(res => { const sc = document.createElement("script"); sc.src = BASE + f; sc.onload = res; sc.onerror = res; document.head.appendChild(sc); });
+const qrLib = loadJs("qrcode.js"), driveLib = loadJs("drive.js");
+var DRV = null;
+var D = null;
+
+async function load() {
+  try {
+    const r = await fetch(BASE + "me", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status === 404 ? "這個網址已失效，請向管理員索取新的網址" : r.status === 429 ? "嘗試太多次，請稍後再試" : "HTTP " + r.status);
+    D = await r.json(); $("#liveDot").className = "dot on";
+    const ta = $("#msgText"); if (ta && (ta.value || document.activeElement === ta)) return;  // don't wipe a half-typed message
+    render();
+  } catch (e) {
+    $("#liveDot").className = "dot off";
+    if (!D) $("#app").innerHTML = card("alert", "red", "無法載入", `<div class="empty">${esc(e.message)}</div>`);
+  }
+}
+
+function render() {
+  const d = D, h = new Date().getHours(), out = [];
+  const hi = (h < 5 ? "夜深了" : h < 11 ? "早安" : h < 14 ? "午安" : h < 18 ? "下午好" : "晚安");
+  // hero
+  const chips = [[d.active ? "ok" : "alert", d.active ? "green" : "red", d.active ? "可以使用" : esc(d.status)]];
+  if (d.shadowrocket.on) chips.push(["rocket", "indigo", "Shadowrocket"]);
+  if (d.tailscale.member) chips.push(["wifi", "blue", "Tailscale"]);
+  if (d.filter.on) chips.push(["shield", "orange", "有上網限制"]);
+  const initial = esc([...(d.name || "?")][0].toUpperCase());
+  out.push(`<div class="card hero"><div class="who"><span class="avatar badge" style="--c:#5e5ce6;width:56px;height:56px;border-radius:50%;font-size:24px;font-weight:800">${initial}</span>
+      <div><div class="hi">${hi}，</div><div class="name">${esc(d.name)}</div></div></div>
+    <div class="chips">${chips.map(([i, c, t]) => `<span class="stat-chip" style="--c:${C[c]}">${icon(i)}${t}</span>`).join("")}</div></div>`);
+  const now = new Date();
+  $("#pageSub").textContent = `${now.getMonth() + 1}月${now.getDate()}日・${d.active ? "可以使用" : d.status}`;
+
+  if (!d.active) out.push(`<div class="banner bad">${icon("alert")} 你的使用權限目前無效（${esc(d.status)}）。如果有疑問，請聯絡管理員。</div>`);
+
+  // at a glance: cloud quota + time left
+  const tiles = [];
+  if (d.drive.on) {
+    const p = d.drive.quota ? d.drive.used / d.drive.quota * 100 : null;
+    tiles.push(ringTile("我的雲端", "cloud", "teal", p != null ? Math.round(p) + "%" : fmtB(d.drive.used), d.drive.quota ? `${fmtB(d.drive.quota - d.drive.used)} 可用` : "不限容量", p));
+  }
+  if (d.expires) {
+    const left = Math.max(0, Math.ceil((new Date(d.expires + "T23:59:59") - now) / 864e5));
+    tiles.push(ringTile("使用期限", "calendar", left <= 3 ? "red" : "orange", left + " 天", `到 ${esc(d.expires)}`, Math.min(100, left / 30 * 100)));
+  } else tiles.push(ringTile("使用期限", "calendar", "green", "永久", "沒有到期日", 100));
+  if (d.daily_min) {
+    const used = d.minutes_today || 0, left = Math.max(0, d.daily_min - used);
+    tiles.push(ringTile("今天還能用", "clock", left <= 10 ? "red" : left <= 30 ? "orange" : "blue", left >= 60 ? Math.floor(left / 60) + "時" + (left % 60 ? left % 60 + "分" : "") : left + " 分",
+      `每天 ${d.daily_min >= 60 ? +(d.daily_min / 60).toFixed(1) + " 小時" : d.daily_min + " 分鐘"}・已用 ${used} 分`, left / d.daily_min * 100));
+  }
+  out.push(`<div class="grid tiles4">${tiles.join("")}</div>`);
+
+
+  // time limits
+  const sc = d.schedule, days = dayText(sc.days, d.weekdays);
+  out.push(card("alarm", "orange", "使用時間", mini([["到期日", d.expires ? esc(d.expires) : "永久"], ["目前狀態", esc(d.status)],
+    ["允許的日子", sc.on ? days : "每天"], ["允許的時段", sc.on ? `${esc(sc.start)}–${esc(sc.end)}${sc.start > sc.end ? " 跨夜" : ""}` : "全天"],
+    ...(d.daily_min ? [["每天可以用", d.daily_min + " 分鐘"], ["今天已經用", (d.minutes_today || 0) + " 分鐘"]] : [])])));
+
+  // cloud drive
+  if (d.drive.on) out.push(card("cloud", "teal", "我的雲端", `<div id="drive"></div>
+    <div class="small muted" style="margin-top:8px">${d.drive.quota ? "容量上限 " + fmtB(d.drive.quota) + "・" : ""}${d.drive.shared === "rw" ? "共用資料夾可以上傳修改" : d.drive.shared === "ro" ? "共用資料夾只能看" : ""}</div>`, 'id="driveCard"'));
+
+  // iPhone photo auto-backup (Shortcuts)
+  if (d.drive.on && d.active && d.drive.backup !== false) {
+    const up = location.origin + BASE + "drive/upload?" + new URLSearchParams({ path: "/mine/相機備份", mkdir: "1", skip_existing: "1" });
+    out.push(card("camera", "pink", "iPhone 照片自動備份", `<div class="small muted">用 iPhone 內建的「捷徑」App，每天自動把新照片存到你的雲端「相機備份」資料夾，不用另外下載 App。</div>
+      <div class="urlbox" id="upUrl">${esc(up)}</div>
+      <div class="btns"><button class="btn primary" id="copyUp">${icon("clipboard")}複製上傳網址</button></div>
+      <details><summary>一步一步設定（約 3 分鐘）</summary><ol class="steps small">
+        <li>先按上面的「複製上傳網址」</li>
+        <li>打開「捷徑」App → 下方「自動化」→ 右上角「＋」→ 選「特定時間」，例如每天晚上 11 點，選「立即執行」</li>
+        <li>按「新增動作」，搜尋 <b>尋找照片</b>，條件設「加入日期」「是今天」</li>
+        <li>再加一個 <b>重複每一項目</b></li>
+        <li>在重複裡面加 <b>取得 URL 內容</b>：網址貼上剛剛複製的網址，方法選 <b>POST</b>，「要求本文」選 <b>檔案</b>、檔案選「重複項目」</li>
+        <li>同一個動作裡展開「標頭」，新增兩個：<br><b>X-Requested-With</b> = <b>portal</b><br><b>X-Filename</b> = 「重複項目」的「名稱」（後面加 <b>.heic</b>，影片用 <b>.mov</b>）</li>
+        <li>按「完成」。第一次執行時 iPhone 會問要不要允許取用照片，按「允許」</li></ol>
+        <div class="small muted">已經備份過的同名照片會自動跳過，不會重複佔空間。只要有網路就可以，不用開 VPN。</div></details>
+      <div class="small muted" style="margin-top:8px">${icon("lock")} 這個網址可以直接上傳到你的雲端，不要給別人。</div>`));
+  }
+
+  // Shadowrocket
+  if (d.shadowrocket.on) {
+    const u = d.shadowrocket.usage || { up: 0, down: 0 };
+    out.push(card("rocket", "indigo", "Shadowrocket", `<div class="center">
+      <div class="qr" id="qrBox"></div>
+      <div class="small muted">在 Shadowrocket 首頁按左上角的掃描圖示掃這個 QR code<br>或在這支 iPhone 上直接按下面的按鈕</div>
+      <div class="btns" style="justify-content:center;margin-top:12px">
+        <a class="btn primary" href="${esc(d.shadowrocket.link)}">${icon("rocket")}用 Shadowrocket 開啟</a>
+        <button class="btn" id="copyLink">${icon("clipboard")}複製連結</button></div></div>
+      ${mini([["已下載", `${icon("down")} ${fmtB(u.down)}`], ["已上傳", `${icon("up")} ${fmtB(u.up)}`]])}
+      <details><summary>怎麼設定？</summary><ol class="steps small">
+        <li>App Store 下載 <b>Shadowrocket</b>（需付費，非中國區帳號）</li>
+        <li>按上面的「用 Shadowrocket 開啟」，或掃 QR code 匯入</li>
+        <li>首頁選剛匯入的「家裡的 Mac」，打開最上面的開關</li>
+        <li>「全域路由」選 <b>代理</b></li>
+        <li>用 Safari 打開下面的「連線檢查」確認</li></ol></details>
+      <div class="small muted" style="margin-top:8px">${icon("lock")} 這組連結等於你的密碼，不要傳給別人。</div>`));
+  }
+
+  // Tailscale
+  if (d.tailscale.member) {
+    const t = d.tailscale, perms = [];
+    if (t.exit) perms.push(pill(icon("globe") + " 用家裡的網路上網", "good"));
+    t.services.forEach(s => perms.push(pill(esc(s), "good")));
+    t.ports.forEach(n => perms.push(pill("port " + n, "good")));
+    t.owner_devices.forEach(n => perms.push(pill(icon("phone") + " " + esc(n), "good")));
+    out.push(card("wifi", "blue", "Tailscale", `
+      <div class="small muted" style="margin-bottom:6px">你可以使用：</div>
+      <div class="chipline">${perms.join("") || pill("目前沒有開放任何項目")}</div>
+      <div class="small muted" style="margin:12px 0 4px">你登入的裝置：</div>
+      ${t.devices.length ? t.devices.map(x => `<div class="row">${badge(/iOS|android/i.test(x.os) ? "phone" : "laptop", "blue")}<div class="grow"><div class="t">${esc(x.name)}</div><div class="s">${esc(x.os)}</div></div></div>`).join("") : `<div class="empty">還沒有裝置登入</div>`}
+      ${t.exit ? `<details><summary>怎麼用家裡的網路上網？</summary><ol class="steps small">
+        <li>打開 Tailscale App，確認已登入並連線</li>
+        <li>點 <b>Exit Node</b>，選 <b>${esc((t.mac || "").split(".")[0])}</b></li>
+        <li>用 Safari 打開下面的「連線檢查」確認</li></ol></details>` : ""}
+      ${d.panel ? `<div class="btns" style="margin-top:10px"><a class="btn" href="${esc(d.panel_url)}" target="_blank" rel="noopener">${icon("sliders")}打開控制台（需開 Tailscale）</a></div>` : ""}`));
+  }
+
+  // filters
+  if (d.filter.on) {
+    const on = Object.entries(d.filter_labels).filter(([k]) => d.filter[k]).map(([, l]) => pill(esc(l), "bad"));
+    out.push(card("shield", "orange", "上網限制", `
+      <div class="chipline">${on.join("") || pill("無")}</div>
+      ${d.filter.blocked.length ? `<div class="small muted" style="margin:10px 0 4px">封鎖的 App / 網站：</div><div class="chipline">${d.filter.blocked.map(n => pill(icon("ban") + " " + esc(n), "bad")).join("")}</div>` : ""}
+      <div class="small muted" style="margin-top:8px">這些限制由管理員設定。</div>`));
+  }
+
+  // message to admin
+  out.push(card("inbox", "green", "留言給管理員", `<div class="msgbox">
+      <div class="msg-kinds" id="msgKinds">${Object.entries(MSGT).map(([k, l], i) => `<button class="chipbtn ${i === 0 ? "on" : ""}" data-mk="${k}">${esc(l)}</button>`).join("")}</div>
+      <textarea id="msgText" maxlength="500" placeholder="想說什麼都可以寫在這裡（可以不填）"></textarea>
+      <div class="btns" style="margin-top:8px"><button class="btn primary" id="msgSend">${icon("send")}送出</button></div></div>
+    <div id="myMsgs"></div>`));
+
+  // connection check
+  out.push(card("activity", "green", "連線檢查", `${mini([["你現在的 IP", esc(d.client_ip)], ["連線方式", d.via_tailnet ? "Tailscale" : "一般網路 / Shadowrocket"]])}
+    <div class="row" style="margin-top:8px"><div class="grow"><b>網速測試</b><div class="small muted">測量連回家的速度（約用掉 15 MB 流量）</div></div><button class="btn sm" id="speedBtn">開始</button></div>
+    <div id="speedOut"></div>
+    <div class="small muted" style="margin-top:8px">想確認上網是不是走家裡的網路：打開 <a href="https://api.ipify.org" target="_blank" rel="noopener noreferrer">api.ipify.org</a>，看顯示的 IP 是不是和管理員告訴你的一樣。</div>
+    <div class="btns" style="margin-top:10px"><button class="btn" id="reload">${icon("refresh")}重新整理</button></div>`));
+
+  out.push(`<div class="small muted center" style="padding:6px 0 10px">${icon("lock")} 這個頁面只有你看得到，權限設定只有管理員能改。<br>把它加入主畫面，之後就能快速打開。</div>`);
+  const driveEl = DRV && DRV.el;
+  $("#app").innerHTML = out.join("");
+  if (d.drive.on) driveLib.then(() => {
+    if (!window.DriveUI) return;
+    if (DRV) { $("#drive").replaceWith(driveEl); return; }
+    DRV = new DriveUI($("#drive"), { url: (op, params) => BASE + "drive/" + op + "?" + new URLSearchParams(params || {}), headers: { "X-Requested-With": "portal" }, shareRoots: ["mine"],
+      icon, esc, fmtB, toast, badge: (ic, c, cls = "") => `<span class="badge ${cls}" style="--c:${c}">${icon(ic)}</span>` });
+    DRV.start();
+  });
+
+  // decorate header badges look like the dashboard
+  if (d.shadowrocket.on) qrLib.then(() => {
+    try { const qr = qrcode(0, "M"); qr.addData(d.shadowrocket.link); qr.make(); $("#qrBox").innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); }
+    catch { $("#qrBox").innerHTML = `<div class="empty">QR code 載入失敗，請用「複製連結」</div>`; }
+  });
+  const cp = $("#copyLink");
+  if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(d.shadowrocket.link); toast("已複製，打開 Shadowrocket 會自動偵測", "ok"); } catch { toast("無法複製，請改用 QR code", "alert"); } };
+  $("#reload").onclick = () => { load(); toast("已更新", "ok"); };
+  const cu = $("#copyUp");
+  if (cu) cu.onclick = async () => { try { await navigator.clipboard.writeText($("#upUrl").textContent); toast("已複製上傳網址", "ok"); } catch { toast("無法複製，請長按網址選取", "alert"); } };
+  $("#msgKinds").onclick = e => { const b = e.target.closest("[data-mk]"); if (!b) return; $("#msgKinds").querySelectorAll(".chipbtn").forEach(x => x.classList.toggle("on", x === b)); };
+  $("#msgSend").onclick = sendMsg;
+  $("#speedBtn").onclick = speedTest;
+  renderMsgs();
+}
+
+// ---------- messages ----------
+const MSGT = { extend: "延長使用期限", quota: "加大雲端容量", time: "增加每日時數", help: "需要幫忙", other: "其他" };
+var MYMSG = null;
+async function loadMsgs() { try { const r = await fetch(BASE + "messages", { cache: "no-store" }); if (r.ok) { MYMSG = (await r.json()).items; renderMsgs(); } } catch {} }
+function renderMsgs() {
+  const el = $("#myMsgs"); if (!el || !MYMSG) return;
+  el.innerHTML = MYMSG.length ? `<div class="small muted" style="margin:14px 0 2px">之前的留言</div>` + MYMSG.slice(0, 5).map(m => `<div class="row" style="align-items:flex-start">
+      ${badge(m.done ? "tick" : "clock", m.done ? "green" : "orange")}<div class="grow"><div class="t">${esc(MSGT[m.kind] || m.kind)}</div>
+      <div class="s">${new Date(m.at * 1000).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}・${m.done ? "已處理" : "等待回覆"}</div>
+      ${m.text ? `<div class="msg-text">${esc(m.text)}</div>` : ""}${m.reply ? `<div class="msg-text" style="color:var(--accent)">${icon("reply")} 管理員：${esc(m.reply)}</div>` : ""}</div></div>`).join("") : "";
+}
+async function sendMsg() {
+  const b = $("#msgSend"), on = $("#msgKinds .chipbtn.on"), kind = on ? on.dataset.mk : "other";
+  b.disabled = true;
+  try {
+    const r = await fetch(BASE + "message", { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "portal" }, body: JSON.stringify({ kind, text: $("#msgText").value }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.error || "送出失敗");
+    $("#msgText").value = ""; toast("已送出，管理員會收到通知", "ok"); loadMsgs();
+  } catch (e) { toast(e.message, "alert"); }
+  b.disabled = false;
+}
+
+// ---------- speed test ----------
+async function speedTest() {
+  const b = $("#speedBtn"), o = $("#speedOut"); b.disabled = true; o.innerHTML = `<div class="small muted" style="margin-top:6px">測試下載中…</div>`;
+  try {
+    let t = performance.now(); const r = await fetch(BASE + "speed/down?mb=10", { cache: "no-store" }); const n = (await r.arrayBuffer()).byteLength;
+    const down = n * 8 / ((performance.now() - t) / 1000) / 1e6;
+    o.innerHTML = `<div class="small muted" style="margin-top:6px">測試上傳中…</div>`;
+    const blob = new Blob([new Uint8Array(5 << 20).map(() => Math.random() * 256)]);
+    t = performance.now(); const r2 = await fetch(BASE + "speed/up", { method: "POST", headers: { "X-Requested-With": "portal" }, body: blob });
+    if (!r2.ok) throw new Error("HTTP " + r2.status);
+    const up = blob.size * 8 / ((performance.now() - t) / 1000) / 1e6;
+    o.innerHTML = `<div class="speed-out"><div class="mini"><div class="k">${icon("down")} 下載</div><div class="v">${down.toFixed(1)} Mbps</div></div>
+      <div class="mini"><div class="k">${icon("up")} 上傳</div><div class="v">${up.toFixed(1)} Mbps</div></div></div>
+      <div class="small muted" style="margin-top:6px">${down > 20 ? "很快，看影片沒問題" : down > 5 ? "還不錯，一般使用沒問題" : "比較慢，可能是網路不好"}</div>`;
+  } catch (e) { o.innerHTML = `<div class="small muted" style="margin-top:6px">測試失敗：${esc(e.message)}</div>`; }
+  b.disabled = false;
+}
+
+load(); loadMsgs(); setInterval(() => { if (!document.hidden) { load(); loadMsgs(); } }, 60000);
+</script>
+</body>
+</html>

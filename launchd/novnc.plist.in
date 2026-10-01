@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>@PREFIX@.novnc</string>
+  <key>ProgramArguments</key><array><string>@BASE@/venv/bin/websockify</string><string>--auth-plugin</string><string>websockify.auth_plugins.ExpectOrigin</string>
+    <string>--auth-source</string><string>https://@HOST@:6443</string><string>--web</string><string>@BASE@/noVNC</string><string>127.0.0.1:6080</string><string>127.0.0.1:5900</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>@BASE@/novnc.log</string>
+  <key>StandardErrorPath</key><string>@BASE@/novnc.log</string>
+</dict></plist>

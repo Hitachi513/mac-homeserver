@@ -1,0 +1,8 @@
+{
+  "owners": ["you@github"],
+  "drive_root": "/Volumes/HomeDrive/HomeCloud",
+  "drive_name": "外接硬碟",
+  "label_prefix": "local.homeserver",
+  "shadowrocket": false,
+  "contact": "https://github.com/your-name"
+}

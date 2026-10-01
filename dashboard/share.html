@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#eef1f8">
+<link rel="apple-touch-icon" href="icon.png">
+<title>分享的檔案</title>
+<style>
+/*SHARED_STYLE*/
+body { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+main { max-width: 760px; }
+.center { text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot on"></span>
+  <div class="titles"><h1 id="title">分享的檔案</h1><div class="subtitle" id="sub"></div></div>
+</header>
+<main><div class="stack" id="app"><div class="card"><div class="skel"><i></i><i></i><i></i></div></div></div></main>
+<div class="toast" id="toast"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtB = b => { if (b == null) return "—"; const u = ["B","KB","MB","GB","TB"]; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return (i ? b.toFixed(1) : b) + " " + u[i]; };
+const IC = {
+  folder: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
+  download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3", x: "M18 6 6 18M6 6l12 12", more: "M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z",
+  image: "M3 3h18v18H3zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21", film: "M2 2h20v20H2zM7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5",
+  music: "M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z", file: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6",
+  archive: "M21 8v13H3V8M1 3h22v5H1zM10 12h4", lock: "M5 11h14v10H5zM7 11V7a5 5 0 0 1 10 0v4", alert: "M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",
+  grid: "M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z", list: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01", search: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35",
+  prev: "M15 18l-6-6 6-6", next: "M9 18l6-6-6-6",
+
+  chevl: "M15 18l-6-6 6-6",
+  chevr: "M9 18l6-6-6-6",
+  link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
+  edit: "M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z",
+  trash: "M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2",
+  upload: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",
+  folderplus: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 11v6M9 14h6",
+  clipboard: "M9 2h6v4H9zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2",
+  play: "M6 3l14 9-14 9z",
+  sort: "M3 6h13M3 12h9M3 18h5M17 8V20M17 20l-3-3M17 20l3-3",
+  check: "M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3",
+  move: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM10 13h6M13 10l3 3-3 3",
+  info: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01",
+  code: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M10 13l-2 2 2 2M14 13l2 2-2 2",
+  tick: "M20 6 9 17l-5-5",
+};
+const icon = n => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="${IC[n] || ""}"/></svg>`;
+const badge = (ic, c, cls = "") => `<span class="badge ${cls}" style="--c:${c}">${icon(ic)}</span>`;
+function toast(msg, ic) { const t = $("#toast"); t.innerHTML = (ic ? icon(ic) + " " : "") + esc(msg); t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2200); }
+const BASE = location.pathname.endsWith("/") ? location.pathname : location.pathname + "/";
+
+async function load() {
+  const r = await fetch(BASE + "info", { cache: "no-store" });
+  if (!r.ok) { $("#app").innerHTML = `<div class="card"><div class="empty">${icon("alert")} 這個分享連結不存在，或已經被取消</div></div>`; return; }
+  const d = await r.json();
+  $("#title").textContent = d.name; document.title = d.name;
+  $("#sub").textContent = `${esc(d.creator)} 分享給你` + (d.expires ? `・${new Date(d.expires * 1000).toLocaleDateString("zh-TW")} 前有效` : "") + (d.left != null ? `・還能下載 ${d.left} 次` : "");
+  if (d.dead) { $("#app").innerHTML = `<div class="card"><div class="empty">${icon("alert")} ${esc(d.dead)}</div></div>`; return; }
+  if (d.locked) {
+    $("#app").innerHTML = `<div class="card center"><span class="badge" style="--c:#5e5ce6;width:56px;height:56px;border-radius:16px;font-size:26px;margin:6px auto 10px;display:grid">${icon("lock")}</span>
+      <h3 style="margin:0 0 4px">需要密碼</h3><div class="small muted">請輸入分享者給你的密碼</div>
+      <form id="pwf" style="margin-top:14px;display:flex;gap:8px"><input type="password" id="pw" placeholder="密碼" autocomplete="off"><button class="btn primary">打開</button></form>
+      <div class="lock-err" id="pwErr" style="margin-top:6px"></div></div>`;
+    $("#pwf").onsubmit = async e => {
+      e.preventDefault();
+      const r2 = await fetch(BASE + "unlock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: $("#pw").value }) });
+      const j = await r2.json().catch(() => ({}));
+      if (r2.ok && j.ok) load(); else $("#pwErr").textContent = j.error || "密碼錯誤";
+    };
+    return;
+  }
+  $("#app").innerHTML = `<div class="card"><div id="drive"></div>${d.dir ? `<div class="btns" style="justify-content:center;margin-top:12px"><a class="btn primary" href="${esc(BASE + "zip?path=/s")}">${icon("download")}全部下載（ZIP）</a></div>` : ""}</div>
+    <div class="small muted center">${icon("lock")} 這是私人分享，請不要轉傳給其他人</div>`;
+  const ui = new DriveUI($("#drive"), { url: (op, params) => BASE + op + "?" + new URLSearchParams(params || {}), icon, esc, fmtB, toast, badge, readonly: true });
+  ui.path = "/s";
+  ui.start({ mounted: true, roots: [{ key: "s", label: d.name, writable: false, quota: 0, used: 0 }] });
+}
+const sc = document.createElement("script"); sc.src = BASE + "drive.js"; sc.onload = load; document.head.appendChild(sc);
+</script>
+</body>
+</html>

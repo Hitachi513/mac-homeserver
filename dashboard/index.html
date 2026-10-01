@@ -1,0 +1,2474 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#eef1f8" id="themeColor">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<link rel="icon" type="image/png" href="/static/icon-180.png">
+<script>try{const t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;}catch(e){}</script>
+<meta name="apple-mobile-web-app-title" content="家用控制台">
+<title>家用控制台</title>
+<style>
+/* ===== Tokens: light is the base, dark overrides (system or manual toggle) ===== */
+:root {
+  color-scheme: light;
+  --bg: #eef1f8;
+  --blob-1: #8fbaff; --blob-2: #ffb3d6; --blob-3: #9fecce; --blob-4: #ffd98f;
+  --glass: rgba(255, 255, 255, .52);
+  --glass-strong: rgba(255, 255, 255, .72);
+  --glass-border: rgba(255, 255, 255, .75);
+  --glass-edge: rgba(15, 23, 42, .06);
+  --sheen: linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 42%);
+  --shadow: 0 10px 34px rgba(30, 41, 80, .12), 0 1px 2px rgba(30, 41, 80, .06);
+  --inner: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(255,255,255,.25);
+  --fill: rgba(118, 118, 128, .12);
+  --fill-2: rgba(118, 118, 128, .2);
+  --text: #0b0c10; --text-2: #3c3f48; --muted: #7b7f8a;
+  --accent: #007aff; --accent-2: #5e5ce6; --accent-ink: #fff;
+  --good: #34c759; --good-ink: #1f8a3a; --warn: #ff9f0a; --bad: #ff3b30;
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --grid: rgba(60, 60, 67, .12);
+  --radius: 22px; --radius-sm: 14px;
+  --blur: blur(26px) saturate(185%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #05060a;
+    --blob-1: #1d3f8f; --blob-2: #6a1f5c; --blob-3: #0f5a4a; --blob-4: #4b3a0e;
+    --glass: rgba(30, 32, 42, .48);
+    --glass-strong: rgba(36, 38, 50, .72);
+    --glass-border: rgba(255, 255, 255, .13);
+    --glass-edge: rgba(0, 0, 0, .4);
+    --sheen: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 40%);
+    --shadow: 0 12px 40px rgba(0, 0, 0, .45), 0 1px 2px rgba(0, 0, 0, .3);
+    --inner: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -1px 0 rgba(255,255,255,.03);
+    --fill: rgba(120, 120, 128, .24); --fill-2: rgba(120, 120, 128, .34);
+    --text: #f5f6fa; --text-2: #c7c9d1; --muted: #8b8e99;
+    --accent: #0a84ff; --accent-2: #7d7aff;
+    --good: #30d158; --good-ink: #4ade80; --warn: #ffd60a; --bad: #ff453a;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --grid: rgba(255, 255, 255, .08);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #05060a;
+  --blob-1: #1d3f8f; --blob-2: #6a1f5c; --blob-3: #0f5a4a; --blob-4: #4b3a0e;
+  --glass: rgba(30, 32, 42, .48);
+  --glass-strong: rgba(36, 38, 50, .72);
+  --glass-border: rgba(255, 255, 255, .13);
+  --glass-edge: rgba(0, 0, 0, .4);
+  --sheen: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 40%);
+  --shadow: 0 12px 40px rgba(0, 0, 0, .45), 0 1px 2px rgba(0, 0, 0, .3);
+  --inner: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -1px 0 rgba(255,255,255,.03);
+  --fill: rgba(120, 120, 128, .24); --fill-2: rgba(120, 120, 128, .34);
+  --text: #f5f6fa; --text-2: #c7c9d1; --muted: #8b8e99;
+  --accent: #0a84ff; --accent-2: #7d7aff;
+  --good: #30d158; --good-ink: #4ade80; --warn: #ffd60a; --bad: #ff453a;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --grid: rgba(255, 255, 255, .08);
+}
+
+/* ===== Base ===== */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+body {
+  margin: 0; min-height: 100vh; background: transparent; color: var(--text);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Noto Sans TC", sans-serif;
+  padding: 0 0 calc(104px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing: antialiased;
+}
+/* soft colour field behind the glass — without it there is nothing to refract */
+body::before {
+  content: ""; position: fixed; inset: -20vmax; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(46vmax 46vmax at 22% 18%, var(--blob-1), transparent 70%),
+    radial-gradient(40vmax 40vmax at 82% 32%, var(--blob-2), transparent 70%),
+    radial-gradient(46vmax 46vmax at 70% 78%, var(--blob-3), transparent 70%),
+    radial-gradient(36vmax 36vmax at 18% 70%, var(--blob-4), transparent 70%);
+  filter: saturate(130%); opacity: 1;
+
+}
+@keyframes drift { to { transform: translate3d(3vmax, -2vmax, 0) rotate(8deg) scale(1.05); } }
+@media (prefers-reduced-motion: reduce) { body::before { animation: none; } }
+
+/* ===== Glass material ===== */
+header, nav, .card, .modal .box, .toast, .tip {
+  background-color: var(--glass);
+  background-image: var(--sheen);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow), var(--inner);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  header, nav, .card, .modal .box, .toast, .tip { background-color: var(--glass-strong); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  header, nav, .card, .modal .box, .toast, .tip { background-color: var(--glass-strong); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+/* ===== Header ===== */
+header {
+  position: sticky; top: 0; z-index: 5; margin: 0 0 4px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  display: flex; align-items: center; gap: 10px;
+  border-width: 0 0 1px; border-radius: 0 0 22px 22px;
+}
+header h1 { font-size: 20px; margin: 0; flex: 1; letter-spacing: -.3px; font-weight: 700; }
+.theme-btn { font: inherit; border: 1px solid var(--glass-border); background: var(--fill); color: var(--text);
+  width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; font-size: 17px;
+  box-shadow: var(--inner); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); display: inline-block; flex: none; }
+.dot.on { background: var(--good); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 25%, transparent); }
+.dot.off { background: var(--bad); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 25%, transparent); }
+.me { display: flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 13px; }
+.me img { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--glass-border); }
+@media (max-width: 420px) { .me span { display: none; } }
+main { max-width: 1000px; margin: 0 auto; padding: 12px 14px; }
+
+/* ===== Floating tab bar ===== */
+nav {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 6;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  width: min(calc(100% - 16px), 640px); overflow-x: auto;
+  display: flex; gap: 2px; padding: 6px; border-radius: 30px;
+  background-color: var(--glass-strong);
+  overflow-x: auto; scrollbar-width: none;
+}
+nav::-webkit-scrollbar { display: none; }
+nav button {
+  flex: 1 1 0; min-width: 40px; background: none; border: 0; color: var(--muted); font: inherit; font-size: 10px; font-weight: 600;
+  display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 2px 5px; border-radius: 22px; cursor: pointer; white-space: nowrap;
+  transition: background .25s, color .25s, transform .15s;
+}
+nav button:active { transform: scale(.94); }
+nav button .i { font-size: 20px; line-height: 1.15; filter: grayscale(.85); opacity: .75; transition: .25s; }
+nav button.active { color: var(--accent); background: var(--glass-strong); box-shadow: var(--inner), 0 2px 10px rgba(0,0,0,.08); }
+nav button.active .i { filter: none; opacity: 1; transform: translateY(-1px); }
+
+/* ===== Layout & cards ===== */
+section[data-tab] { display: none; animation: fadein .28s ease; }
+section[data-tab].show { display: block; }
+@keyframes fadein { from { opacity: 0; transform: translateY(6px); } }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.grid.wide { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
+.card { border-radius: var(--radius); padding: 16px; min-width: 0; }
+.card h2 { font-size: 13px; margin: 0 0 10px; color: var(--text-2); font-weight: 650; display: flex; align-items: center; gap: 8px;
+  text-transform: none; letter-spacing: .2px; }
+.card h2 .sp { flex: 1; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.tile .label { font-size: 12px; color: var(--text-2); font-weight: 600; }
+.tile .value { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -1px; line-height: 1.15; margin-top: 2px; }
+.tile .sub { font-size: 12px; color: var(--muted); }
+.meter { height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; margin-top: 10px; }
+.meter > i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .5s; }
+.row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--grid); }
+.row:first-of-type { border-top: 0; }
+.row .grow { flex: 1; min-width: 0; }
+.row .t { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .s { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pill { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--fill); color: var(--text-2); white-space: nowrap; }
+.pill.good { color: var(--good-ink); background: color-mix(in srgb, var(--good) 16%, transparent); }
+.pill.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+.muted { color: var(--muted); } .small { font-size: 12px; }
+code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--fill); padding: 1px 5px; border-radius: 6px; }
+a { color: var(--accent); }
+.empty { color: var(--muted); text-align: center; padding: 18px 0; font-size: 13px; }
+
+/* ===== Controls ===== */
+button.btn, a.btn, label.btn {
+  font: inherit; font-size: 14px; font-weight: 600; border: 1px solid var(--glass-border); background: var(--fill); color: var(--text);
+  border-radius: 999px; padding: 9px 15px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: var(--inner); transition: transform .12s, background .2s, filter .2s;
+}
+button.btn:hover, a.btn:hover, label.btn:hover { background: var(--fill-2); }
+button.btn:active, a.btn:active, label.btn:active { transform: scale(.96); }
+button.btn.primary, a.btn.primary, label.btn.primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent));
+  color: var(--accent-ink); border-color: transparent;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.35);
+}
+button.btn.danger { color: var(--bad); }
+button.btn.sm, a.btn.sm, label.btn.sm { font-size: 12px; padding: 5px 11px; }
+button.btn:disabled { opacity: .45; pointer-events: none; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+input[type=text], input[type=search], input[type=url], input[type=password], input[type=number], textarea, select {
+  font: inherit; font-size: 16px; width: 100%; padding: 10px 14px; border-radius: 14px;
+  border: 1px solid var(--glass-border); background: var(--fill); color: var(--text); outline: none;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.06); transition: box-shadow .2s, border-color .2s;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+textarea { min-height: 90px; resize: vertical; }
+.inline { display: flex; gap: 8px; } .inline > input, .inline > select { flex: 1; min-width: 0; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.switch { position: relative; width: 51px; height: 31px; flex: none; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch span { position: absolute; inset: 0; background: var(--fill-2); border-radius: 99px; transition: .25s; cursor: pointer; }
+.switch span::after { content: ""; position: absolute; width: 27px; height: 27px; left: 2px; top: 2px; background: #fff;
+  border-radius: 50%; transition: .25s cubic-bezier(.3,1.4,.6,1); box-shadow: 0 3px 8px rgba(0,0,0,.18), 0 1px 1px rgba(0,0,0,.1); }
+.switch input:checked + span { background: var(--good); }
+.switch input:checked + span::after { transform: translateX(20px); }
+
+/* ===== Charts & lists ===== */
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-2); margin-bottom: 6px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.tip { position: absolute; pointer-events: none; color: var(--text); font-size: 12px; padding: 7px 10px;
+  border-radius: 12px; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px)); z-index: 3; }
+.bars .b { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; padding: 6px 0; font-size: 13px; cursor: pointer; }
+.bars .b .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bars .b .v { color: var(--text-2); font-variant-numeric: tabular-nums; }
+.bars .b .track { grid-column: 1 / -1; height: 6px; background: var(--fill); border-radius: 3px; }
+.bars .b .track i { display: block; height: 100%; border-radius: 3px; background: var(--series-1); }
+.bars.blocked .b .track i { background: var(--series-2); }
+.bars .b .acts { grid-column: 1 / -1; display: none; gap: 6px; padding-top: 4px; }
+.bars .b.open .acts { display: flex; }
+.log .row { font-size: 13px; }
+.log .dom, .dom { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; word-break: break-all; }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tbl td, table.tbl th { text-align: left; padding: 6px 4px; border-top: 1px solid var(--grid); }
+table.tbl th { color: var(--text-2); font-weight: 600; }
+table.tbl td.r, table.tbl th.r { text-align: right; font-variant-numeric: tabular-nums; }
+details summary { cursor: pointer; color: var(--text-2); font-size: 12px; margin-top: 8px; }
+pre.out { background: var(--fill); padding: 10px 12px; border-radius: 14px; font-size: 12px; white-space: pre-wrap; margin: 8px 0 0; }
+
+/* ===== Ad-block service grid & chips ===== */
+.svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; max-height: 380px; overflow: auto; padding: 2px; }
+.svc { border: 1px solid var(--glass-border); border-radius: 16px; padding: 10px 6px; text-align: center; font-size: 12px; cursor: pointer;
+  background: var(--fill); display: flex; flex-direction: column; align-items: center; gap: 5px; user-select: none; transition: transform .12s, background .2s; }
+.svc:active { transform: scale(.95); }
+.svc .ic { width: 26px; height: 26px; color: var(--text-2); } .svc .ic svg { width: 100%; height: 100%; fill: currentColor; }
+.svc.on { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+.svc.on .ic { color: var(--bad); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.chips button { font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--glass-border); background: var(--fill); color: var(--text-2);
+  border-radius: 99px; padding: 5px 12px; cursor: pointer; }
+.chips button.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+
+/* ===== Files ===== */
+.drop { border: 2px dashed var(--fill-2); border-radius: var(--radius); padding: 24px; text-align: center; color: var(--text-2); cursor: pointer; display: block;
+  background: color-mix(in srgb, var(--accent) 5%, transparent); transition: .2s; }
+.drop.hover { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.progress { height: 5px; background: var(--fill); border-radius: 3px; overflow: hidden; margin-top: 10px; }
+.progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width: 0; }
+.shot { width: 100%; border-radius: 16px; border: 1px solid var(--glass-border); margin-top: 10px; }
+
+/* ===== Remote ===== */
+.np { display: flex; align-items: center; gap: 12px; }
+.np .art { width: 54px; height: 54px; border-radius: 14px; background: linear-gradient(135deg, var(--accent), #ff2d55);
+  display: grid; place-items: center; font-size: 24px; flex: none; box-shadow: 0 6px 16px rgba(0,0,0,.18); }
+
+/* ===== Members ===== */
+.person { border: 1px solid var(--glass-border); border-radius: 18px; padding: 12px; margin-top: 10px; background: var(--fill); }
+.person .head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.person .head .s { font-size: 12px; color: var(--muted); }
+.person .body > .s { font-size: 12px; color: var(--muted); }
+.person.collapsed .body { display: none; }
+.person .perm { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--grid); font-size: 14px; }
+.person .perm:first-of-type { border-top: 0; }
+.person .perm .grow { flex: 1; }
+.permbtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.permbtn { font: inherit; text-align: left; border: 2px solid var(--glass-border); background: var(--fill); color: var(--text-2);
+  border-radius: 16px; padding: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.permbtn .pi { font-size: 20px; } .permbtn .pl { font-weight: 600; font-size: 14px; } .permbtn .ps { font-size: 11px; }
+.permbtn.on { border-color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--text); }
+.permbtn.on .ps { color: var(--good-ink); }
+.sect { border-top: 1px solid var(--grid); padding-top: 12px; margin-top: 12px; }
+.sect > .st { font-size: 13px; font-weight: 650; color: var(--text-2); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.sect > .st .sp { flex: 1; }
+.chipbtns { display: flex; flex-wrap: wrap; gap: 6px; }
+.chipbtn { font: inherit; font-size: 13px; font-weight: 550; border: 1.5px solid var(--glass-border); background: var(--glass-strong); color: var(--text-2);
+  border-radius: 99px; padding: 6px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: var(--inner);
+  transition: transform .12s, background .2s, border-color .2s; }
+.chipbtn:active { transform: scale(.95); }
+.chipbtn.on { border-color: var(--good); color: var(--text); background: color-mix(in srgb, var(--good) 18%, var(--glass-strong)); }
+.chipbtn.block.on { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 16%, var(--glass-strong)); }
+.chipbtn svg { width: 16px; height: 16px; fill: currentColor; }
+.chipbtn svg.ico { fill: none; }
+.timein { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.timein input { font: inherit; font-size: 16px; padding: 7px 10px; border-radius: 12px; border: 1px solid var(--glass-border); background: var(--glass-strong); color: var(--text); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.summary .row { font-size: 14px; }
+.banner { border-radius: 16px; padding: 10px 12px; font-size: 13px; margin-bottom: 10px; border: 1px solid var(--glass-border); background: var(--fill); }
+.banner.bad { border-color: color-mix(in srgb, var(--bad) 45%, transparent); color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, transparent); }
+.banner.good { color: var(--good-ink); background: color-mix(in srgb, var(--good) 12%, transparent); }
+
+/* ===== Overlays ===== */
+.modal { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.28); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  display: grid; place-items: center; padding: 16px; animation: fadein .2s; }
+.modal .box { border-radius: 28px; padding: 20px; width: 100%; max-width: 380px; background-color: var(--glass-strong); }
+.modal h3 { margin: 0 0 6px; font-size: 18px; }
+.modal .err { color: var(--bad); font-size: 13px; min-height: 18px; margin-top: 6px; }
+.toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translate(-50%, 10px);
+  color: var(--text); padding: 10px 18px; border-radius: 99px; font-size: 14px; font-weight: 600; z-index: 20;
+  opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; max-width: 90vw; background-color: var(--glass-strong); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ===== Wide screens: tab bar floats at the top ===== */
+@media (min-width: 820px) {
+  nav { top: calc(70px + env(safe-area-inset-top)); bottom: auto; position: sticky; transform: none; margin: 8px auto 0; left: auto; width: fit-content; max-width: calc(100% - 28px); }
+  nav button { flex-direction: row; font-size: 13.5px; padding: 8px 14px; gap: 6px; min-width: 0; }
+  nav button .i { font-size: 16px; }
+  body { padding-bottom: 30px; }
+  .toast { bottom: 30px; }
+}
+
+/* ===== Icons & badges ===== */
+.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -.125em; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.badge { width: 28px; height: 28px; border-radius: 8px; display: inline-grid; place-items: center; color: #fff; flex: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c, var(--accent)) 82%, white), var(--c, var(--accent)));
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--c, var(--accent)) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.35); font-size: 16px; }
+.badge .ico { stroke-width: 2.2; }
+.card > h2 { font-size: 15px; color: var(--text); font-weight: 700; gap: 10px; margin-bottom: 12px; }
+.card > h2 .badge { width: 26px; height: 26px; font-size: 15px; }
+nav button .i { filter: none !important; opacity: 1 !important; font-size: 22px; }
+nav button .i .ico { stroke-width: 1.9; }
+nav button.active .i .ico { stroke-width: 2.3; }
+.theme-btn .ico { font-size: 18px; }
+/* hero */
+.hero { position: relative; overflow: hidden; padding: 20px 18px 18px; }
+.hero::after { content: ""; position: absolute; right: -60px; top: -60px; width: 200px; height: 200px; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 40%, transparent), transparent); pointer-events: none; }
+.hero .hi { font-size: 13px; color: var(--text-2); font-weight: 600; }
+.hero .name { font-size: 26px; font-weight: 800; letter-spacing: -.6px; margin: 2px 0 12px; }
+.hero .chips { margin: 0; gap: 8px; }
+.stat-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 650; padding: 6px 11px 6px 8px;
+  border-radius: 99px; background: var(--glass-strong); border: 1px solid var(--glass-border); box-shadow: var(--inner); }
+.stat-chip .ico { font-size: 15px; color: var(--c); }
+/* tiles */
+.tile { position: relative; overflow: hidden; }
+.tile .top { display: flex; align-items: center; gap: 8px; }
+.tile .badge { width: 26px; height: 26px; border-radius: 8px; font-size: 14px; }
+.tile .value { margin-top: 10px; }
+.tile .meter > i { background: linear-gradient(90deg, color-mix(in srgb, var(--c, var(--accent)) 70%, white), var(--c, var(--accent))); }
+.tile::after { content: ""; position: absolute; right: -30px; bottom: -40px; width: 110px; height: 110px; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--c, var(--accent)) 22%, transparent), transparent); pointer-events: none; }
+/* device rows */
+.devbadge { width: 38px; height: 38px; border-radius: 12px; font-size: 20px; }
+
+/* ===== Shadowrocket ===== */
+.qr { background: #fff; padding: 12px; border-radius: 18px; display: inline-block; margin: 12px 0 8px; box-shadow: var(--shadow); }
+.qr svg, .qr img { display: block; width: 230px; height: 230px; }
+.person.sronly .sect.tsonly { display: none; }
+.usage { font-variant-numeric: tabular-nums; }
+#srList .row .t { white-space: normal; }
+
+/* ===== Layout v2: grouped lists, segmented controls, big quick tiles ===== */
+.section-title { font-size: 13px; font-weight: 650; color: var(--muted); margin: 10px 6px -4px; }
+.section-title.right { text-align: right; margin-top: 2px; }
+.pad { padding: 0 6px; }
+.card.list { padding: 2px 16px; }
+.card.list .row { padding: 12px 0; }
+.tiles4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.seg { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--fill); margin: 0 0 14px;
+  border: 1px solid var(--glass-border); }
+.seg button { flex: 1; font: inherit; font-size: 13.5px; font-weight: 650; border: 0; background: none; color: var(--text-2);
+  padding: 8px 6px; border-radius: 10px; cursor: pointer; transition: background .2s, color .2s; }
+.seg button.on { background: var(--glass-strong); color: var(--text); box-shadow: 0 1px 6px rgba(0,0,0,.12), var(--inner); }
+.quick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.qbtn { position: relative; font: inherit; text-align: left; text-decoration: none; color: var(--text); cursor: pointer;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 20px;
+  background-color: var(--glass); background-image: var(--sheen); border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: var(--shadow), var(--inner);
+  transition: transform .12s; min-height: 86px; }
+.card .qbtn { box-shadow: var(--inner); background-color: var(--fill); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.qbtn:active { transform: scale(.97); }
+.qbtn .ico { font-size: 24px; color: var(--accent); }
+.qbtn span { font-size: 14px; font-weight: 650; }
+.qbtn.on { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent)); color: #fff; }
+.qbtn.on .ico { color: #fff; }
+.qbtn.switchbtn .switch { position: absolute; top: 12px; right: 12px; }
+.row.big .t { font-size: 17px; }
+.btn.wide { width: 100%; justify-content: center; padding: 13px; font-size: 15px; }
+.btn.round { width: 48px; height: 48px; padding: 0; justify-content: center; border-radius: 50%; font-size: 18px; }
+.btn.round.big { width: 66px; height: 66px; font-size: 26px; }
+.btn.round.sm { width: 36px; height: 36px; font-size: 15px; }
+.media-btns { display: flex; justify-content: center; align-items: center; gap: 20px; margin: 16px 0 12px; }
+.vol { display: flex; align-items: center; gap: 10px; }
+.vol input { flex: 1; }
+details.summary > summary.sumhead { font-size: 15px; font-weight: 700; color: var(--text); margin: 0; cursor: pointer; }
+details.summary[open] > summary.sumhead { margin-bottom: 8px; }
+
+/* ===== Lock screen ===== */
+.lock { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent); -webkit-backdrop-filter: blur(34px) saturate(180%); backdrop-filter: blur(34px) saturate(180%); }
+.lock-box { text-align: center; width: min(330px, 100%); }
+.lock-ic { width: 60px; height: 60px; border-radius: 18px; margin: 0 auto 14px; font-size: 28px; }
+.lock-title { font-size: 20px; font-weight: 700; }
+.lock-sub { font-size: 13px; color: var(--muted); margin-top: 4px; min-height: 18px; }
+.lock-dots { display: flex; gap: 20px; justify-content: center; margin: 22px 0 6px; }
+.lock-dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--text); transition: background .1s; }
+.lock-dots i.f { background: var(--text); }
+.lock-dots.shake { animation: shake .45s; }
+@keyframes shake { 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+.lock-err { color: var(--bad); font-size: 13px; min-height: 20px; }
+.keypad { display: grid; grid-template-columns: repeat(3, 76px); gap: 14px 24px; justify-content: center; margin-top: 12px; }
+.key { width: 76px; height: 76px; border-radius: 50%; font: inherit; font-size: 30px; font-weight: 400; color: var(--text); cursor: pointer;
+  background: var(--glass); border: 1px solid var(--glass-border); box-shadow: var(--inner); display: grid; place-items: center; }
+.key:active { background: var(--fill-2); }
+.key.fn { background: none; border: 0; box-shadow: none; font-size: 26px; color: var(--text); }
+.key.fn:disabled { visibility: hidden; }
+.lock-links { margin-top: 18px; display: flex; justify-content: center; gap: 16px; }
+.lock-links button { font: inherit; font-size: 14px; border: 0; background: none; color: var(--accent); cursor: pointer; }
+.lock-extra { margin-top: 16px; }
+
+/* ===== Cloud drive ===== */
+.drv-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.drv-crumbs { display: flex; align-items: center; gap: 2px; flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+.drv-crumb { font: inherit; font-size: 14px; font-weight: 650; border: 0; background: none; color: var(--accent); padding: 4px 6px; border-radius: 8px; cursor: pointer; }
+.drv-crumb:last-child { color: var(--text); }
+.drv-sep { color: var(--muted); }
+.drv-actions { display: flex; gap: 6px; }
+.drv-quota { margin: 2px 0 6px; }
+.drv-quota .meter > i { background: var(--c); }
+.drv-prog { margin: 6px 0; }
+.drv-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 2px; border: 0; border-top: 1px solid var(--grid);
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.drv-list > .drv-item:first-child { border-top: 0; }
+.drv-ic { width: 38px; height: 38px; border-radius: 11px; font-size: 19px; }
+.drv-name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.drv-name .t { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drv-name .s { font-size: 12px; color: var(--muted); }
+.drv-name .drv-desc { color: var(--text-2); white-space: normal; margin: 1px 0; }
+.drv-more { border: 0; background: none; color: var(--muted); font-size: 20px; padding: 6px; cursor: pointer; }
+.drv-chev { color: var(--muted); font-size: 22px; }
+.drv-view-box { width: min(760px, 100%); max-height: 92vh; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.drv-view-body img, .drv-view-body video { display: block; max-width: 100%; max-height: 74vh; border-radius: 18px; background: #000; }
+.drv-view-btns { justify-content: center; }
+.drv-view-btns .drv-input { width: 220px; }
+.drv-sheet, .drv-audio { background: var(--glass-strong); border: 1px solid var(--glass-border); border-radius: 24px; padding: 22px; text-align: center; min-width: 260px; box-shadow: var(--shadow); }
+.drv-sheet .drv-ic, .drv-audio .drv-ic { margin: 0 auto 10px; width: 54px; height: 54px; font-size: 26px; display: grid; }
+.drv-sheet .t, .drv-audio .t { font-weight: 700; word-break: break-all; }
+.drv-sheet .s { font-size: 13px; color: var(--muted); }
+.drv-audio audio { margin-top: 12px; }
+.drv-drag { outline: 2px dashed var(--accent); outline-offset: 6px; border-radius: 16px; }
+.usage-row .meter { margin-top: 6px; }
+
+/* ===== Member sheet ===== */
+.mrow { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 0; border: 0; border-top: 1px solid var(--grid);
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+#memList > .mrow:first-child { border-top: 1px solid var(--grid); }
+.mrow .grow { flex: 1; min-width: 0; }
+.mrow .t { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mrow .s { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.chev { color: var(--muted); font-size: 22px; }
+.sheet { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.25); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  display: flex; align-items: flex-end; justify-content: center; animation: fadein .2s; }
+.sheet-box { width: min(680px, 100%); max-height: calc(100% - 28px - env(safe-area-inset-top)); display: flex; flex-direction: column;
+  border-radius: 28px 28px 0 0; background-color: var(--glass-strong); background-image: var(--sheen); border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: var(--shadow); animation: sheetup .28s cubic-bezier(.2,.9,.3,1); }
+@keyframes sheetup { from { transform: translateY(40px); opacity: .6; } }
+.sheet-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px 8px; }
+.sheet-head .t { flex: 1; font-weight: 700; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-head .done { font: inherit; font-weight: 700; color: var(--accent); background: none; border: 0; font-size: 16px; cursor: pointer; padding: 6px; }
+.sheet .seg { margin: 4px 16px 6px; }
+.sheet-body { overflow-y: auto; padding: 4px 16px calc(24px + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; }
+.sheet-body .sect:first-child { border-top: 0; margin-top: 4px; }
+.sheet-body [data-g] { display: none; }
+.sheet-body[data-show="basic"] [data-g="basic"], .sheet-body[data-show="conn"] [data-g="conn"], .sheet-body[data-show="cloud"] [data-g="cloud"],
+.sheet-body[data-show="limit"] [data-g="limit"], .sheet-body[data-show="panel"] [data-g="panel"] { display: block; }
+.sheet-body.sronly .tsonly { display: none !important; }
+
+/* ===== Disk stats ===== */
+.disk-big { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.disk-big .v { font-size: 30px; font-weight: 800; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.disk-big .of { color: var(--muted); font-size: 15px; }
+.stackbar { display: flex; gap: 2px; height: 14px; border-radius: 7px; overflow: hidden; margin: 12px 0 8px; background: var(--fill); }
+.stackbar i { display: block; height: 100%; min-width: 3px; }
+.stackbar i:first-child { border-radius: 7px 0 0 7px; }
+.disk-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--text-2); }
+.disk-legend span { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.disk-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.kind-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; }
+.kind-row .track { height: 8px; border-radius: 4px; background: var(--fill); overflow: hidden; }
+.kind-row .track i { display: block; height: 100%; border-radius: 4px; background: var(--series-1); }
+.kind-row .v { color: var(--text-2); font-variant-numeric: tabular-nums; font-size: 13px; text-align: right; }
+
+/* ===== Polish v3 ===== */
+header .titles { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+header h1 { font-size: 26px; letter-spacing: -.6px; line-height: 1.15; }
+header .subtitle { font-size: 12.5px; color: var(--muted); font-weight: 600; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero .who { display: flex; align-items: center; gap: 14px; }
+.hero .avatar { width: 56px; height: 56px; border-radius: 50%; border: 3px solid var(--glass-border); box-shadow: var(--shadow); object-fit: cover; flex: none; background: var(--fill); }
+.hero .name { margin: 0; font-size: 24px; }
+.hero .avatar.badge { background: linear-gradient(135deg, #5e5ce6, #bf5af2); color: #fff; display: grid; place-items: center; }
+.hero .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 14px -18px -2px; padding: 0 18px 2px; }
+.hero .chips::-webkit-scrollbar { display: none; }
+.stat-chip { flex: none; }
+/* ring tiles */
+.tile.ring { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 16px 12px 14px; }
+.ringbox { position: relative; width: 96px; height: 96px; }
+.ringbox svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ringbox circle { fill: none; stroke-width: 8; stroke-linecap: round; }
+.ringbox .trk { stroke: var(--fill); }
+.ringbox .val { stroke: var(--c); transition: stroke-dasharray .6s cubic-bezier(.2,.8,.2,1); }
+.ringbox .rv { position: absolute; inset: 0; display: grid; place-items: center; font-size: 21px; font-weight: 800; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.ringbox .rv.small { font-size: 14px; }
+.tile.ring .rl { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13.5px; font-weight: 700; }
+.tile.ring .rl .badge { width: 20px; height: 20px; border-radius: 6px; font-size: 12px; }
+.tile.ring .sub { margin-top: 2px; }
+.spark { width: 100%; height: 26px; margin-top: 8px; display: block; overflow: visible; }
+.spark path.l { fill: none; stroke: var(--c); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.spark { color: var(--c); }
+/* disk mini grid */
+.mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.mini { background: var(--fill); border-radius: 14px; padding: 10px 12px; min-width: 0; }
+.mini .k { font-size: 11.5px; color: var(--muted); font-weight: 650; }
+.mini .v { font-size: 14.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+/* skeleton loading */
+.skel { display: flex; flex-direction: column; gap: 10px; padding: 6px 0; }
+.skel i { display: block; height: 14px; border-radius: 7px; background: linear-gradient(90deg, var(--fill) 25%, var(--fill-2) 50%, var(--fill) 75%);
+  background-size: 200% 100%; animation: skel 1.3s ease-in-out infinite; }
+.skel i:nth-child(2) { width: 80%; } .skel i:nth-child(3) { width: 60%; }
+@keyframes skel { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.kv-wrap .row > div:last-child { font-size: 14px; word-break: break-all; }
+
+/* ===== Touch: finger-sized targets (Apple HIG ~44pt); mouse keeps the compact look ===== */
+@media (pointer: coarse) {
+  button.btn.sm, a.btn.sm, label.btn.sm { min-height: 40px; padding: 8px 14px; font-size: 13px; }
+  .chips button { min-height: 38px; padding: 7px 14px; font-size: 13px; }
+  .drv-crumb { min-height: 40px; min-width: 40px; }
+  .drv-more { min-width: 44px; min-height: 44px; }
+  .chipbtn { min-height: 38px; }
+}
+
+.btn.iconbtn { width: 40px; height: 40px; min-height: 40px; padding: 0; justify-content: center; border-radius: 50%; font-size: 17px; flex: none; }
+#srList .row .s { white-space: normal; }
+
+/* ===== Drive v2: toolbar, gallery grid, thumbnails, share form ===== */
+.drv-actions .iconbtn { width: 36px; height: 36px; min-height: 36px; font-size: 16px; }
+.drv-search { margin: 4px 0 8px; }
+.drv-tools { display: flex; gap: 8px; justify-content: flex-end; margin: 2px 0 8px; }
+.drv-thumb { position: relative; width: 38px; height: 38px; flex: none; }
+.drv-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 11px; }
+.drv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+.drv-cell { position: relative; aspect-ratio: 1; border: 0; padding: 0; border-radius: 14px; overflow: hidden; background: var(--fill);
+  cursor: pointer; display: grid; place-items: center; font: inherit; color: inherit; }
+.drv-cell img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+.drv-cell-ic { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -64%); }
+.drv-cell-name { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; font-size: 11px; font-weight: 600; padding: 14px 6px 5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.drv-cell img ~ .drv-cell-name { color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.55)); }
+.drv-play { position: absolute; z-index: 2; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+  background: rgba(0,0,0,.45); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); font-size: 15px; }
+.drv-view-name { color: #fff; text-align: center; font-size: 13px; margin-top: 8px; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.drv-form { text-align: left; margin-top: 14px; display: grid; gap: 6px; }
+.drv-form .k { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 6px; }
+.drv-share { max-width: 360px; }
+/* ===== bell + notifications ===== */
+.bell { position: relative; }
+.bell-dot { position: absolute; top: 6px; right: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--bad); border: 2px solid var(--glass-strong); }
+.nrow { display: flex; gap: 12px; padding: 12px 0; border-top: 1px solid var(--grid); }
+.nrow:first-child { border-top: 0; }
+.nrow .grow { flex: 1; min-width: 0; }
+.nrow .t { font-weight: 700; } .nrow .s { font-size: 13px; color: var(--text-2); margin-top: 2px; } .nrow .when { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.nrow.unread .t::after { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-left: 6px; vertical-align: 2px; }
+.segcount { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 5px; border-radius: 99px; background: var(--bad); color: #fff; font-size: 11px; line-height: 18px; }
+.segcount:empty { display: none; }
+/* ===== member report ===== */
+.rep-chart { display: flex; align-items: flex-end; gap: 4px; height: 120px; margin: 10px 0 4px; padding-bottom: 18px; position: relative; }
+.rep-chart .rbar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; position: relative; }
+.rep-chart .rbar i { display: block; border-radius: 4px 4px 2px 2px; background: var(--series-1); min-height: 2px; }
+.rep-chart .rbar.today i { background: var(--series-2); }
+.rep-chart .rbar b { position: absolute; bottom: -17px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.speed-out { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.msg-text { white-space: pre-wrap; word-break: break-word; margin-top: 4px; font-size: 14px; }
+.sheet-body[data-show="report"] [data-g="report"] { display: block; }
+
+/* ===== Drive v3: select, move, details, document & text previews ===== */
+.drv-actions .iconbtn[hidden] { display: none; }
+.drv-selbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 2px 0 8px; padding: 8px 10px; border-radius: 16px; background: var(--fill); }
+.drv-selcount { flex: 1; min-width: 90px; font-size: 13px; font-weight: 700; }
+.drv-item.selecting, .drv-cell.selecting { cursor: pointer; }
+.drv-check { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--muted); display: grid; place-items: center; color: #fff; font-size: 14px; }
+.sel .drv-check { background: var(--accent); border-color: var(--accent); }
+.drv-cell .drv-check { position: absolute; top: 6px; right: 6px; z-index: 3; background: rgba(0,0,0,.25); border-color: #fff; }
+.drv-cell.sel { outline: 3px solid var(--accent); outline-offset: -3px; }
+.drv-cell.sel .drv-check { background: var(--accent); }
+.drv-item.sel { background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: 12px; }
+.drv-foot { text-align: center; margin-top: 10px; }
+.drv-view-name span { opacity: .75; }
+.drv-sheet-pic { display: block; width: 96px; height: 96px; object-fit: cover; border-radius: 18px; margin: 0 auto 10px; }
+.drv-info { width: min(420px, 100%); text-align: left; }
+.drv-info .drv-ic { margin: 0 auto 10px; }
+.drv-info > .t { text-align: center; margin-bottom: 10px; }
+.drv-kvrow { display: flex; gap: 12px; padding: 9px 0; border-top: 1px solid var(--grid); font-size: 14px; }
+.drv-kvrow .k { flex: none; width: 76px; color: var(--muted); }
+.drv-kvrow .v { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.drv-kvrow .v .muted { font-size: 12px; }
+.drv-doc { width: min(760px, calc(100vw - 32px)); max-height: 72vh; overflow: auto; -webkit-overflow-scrolling: touch; background: var(--glass-strong);
+  border: 1px solid var(--glass-border); border-radius: 18px; padding: 14px; box-shadow: var(--shadow); text-align: left; }
+.drv-doc pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 13px/1.55 ui-monospace, Menlo, monospace; color: var(--text); }
+.drv-table { overflow-x: auto; }
+.drv-table table { border-collapse: collapse; font-size: 13px; }
+.drv-table th, .drv-table td { border: 1px solid var(--grid); padding: 5px 8px; white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.drv-table th { background: var(--fill); position: sticky; top: -14px; }
+.drv-page { text-align: center; }
+.drv-page img { display: block; max-width: min(620px, 100%); max-height: 70vh; margin: 0 auto; border-radius: 10px; background: #fff; box-shadow: var(--shadow); }
+.drv-page-note { color: #fff; margin-top: 8px; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.drv-pick { width: min(420px, 100%); text-align: left; }
+.drv-pick > .t { text-align: center; }
+.drv-pick-at { font-size: 13px; color: var(--muted); margin: 8px 0 4px; display: flex; align-items: center; gap: 6px; }
+.drv-pick-list { max-height: 46vh; overflow: auto; }
+.drv-view-btns { flex-wrap: wrap; }
+
+/* drive: small phones (iPhone SE / mini) */
+.drv-bar.long .drv-crumbs { flex-basis: 100%; }
+.drv-bar.long .drv-actions { margin-left: auto; }
+html:has(.drv-viewer:not([hidden])), html:has(.drv-viewer:not([hidden])) body { overflow: hidden; }
+.drv-viewer { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.drv-tools { flex-wrap: wrap; }
+.drv-tools .btn, .drv-selbar .btn, .drv-view-btns .btn { white-space: nowrap; }
+.drv-view-body img, .drv-view-body video { max-height: calc(100dvh - 190px); }
+.drv-page img { max-height: calc(100dvh - 230px); }
+.drv-doc { max-height: calc(100dvh - 190px); }
+@media (max-width: 360px) {
+  .drv-tools { gap: 6px; }
+  .drv-tools .btn.btn.sm, .drv-selbar .btn.btn.sm { padding-left: 9px; padding-right: 9px; font-size: 12.5px; gap: 4px; }
+  .drv-view-btns { gap: 6px; }
+  .drv-view-btns .btn { padding-left: 12px; padding-right: 12px; }
+}
+
+/* ===== iPhone Safari: overlays must fit the *visible* screen (toolbars, notch, home bar) =====
+   vh on iOS = screen without toolbars, so a 92vh box hides its buttons under Safari's bar; svh = smallest visible height.
+   A centered box that is taller than the screen also can't be scrolled to its top, so the viewer scrolls and the box
+   centers itself with margin:auto (falls back to top-aligned when it doesn't fit). */
+.drv-viewer { display: flex; flex-direction: column; align-items: center; place-items: initial;
+  padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+.drv-view-box { margin: auto; max-height: none; flex: none; }
+.drv-view-body { max-width: 100%; }
+.drv-view-body img, .drv-view-body video { max-height: calc(100vh - 260px); max-height: calc(100svh - 200px); }
+.drv-page img { max-height: calc(100vh - 300px); max-height: calc(100svh - 240px); }
+.drv-doc { max-height: calc(100vh - 260px); max-height: calc(100svh - 200px); }
+.drv-pick-list { max-height: 46vh; max-height: calc(100svh - 300px); }
+.drv-sheet { max-width: 100%; }
+.toast { z-index: 80; }
+
+/* ===== Mac pane ===== */
+.mac-hero { display: flex; align-items: center; gap: 14px; }
+.mac-hero .big { font-size: 20px; font-weight: 800; }
+.mac-hero .badge { width: 52px; height: 52px; border-radius: 16px; font-size: 26px; flex: none; }
+.mac-live { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.mac-live .mini .v { font-variant-numeric: tabular-nums; }
+.mac-live .mini .h { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stat { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
+.stat.good { color: var(--good-ink, var(--good)); } .stat.warn { color: #c77700; } .stat.bad { color: var(--bad); }
+.trend { margin-top: 12px; }
+.trend-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; font-size: 13px; font-weight: 700; }
+.trend-head > b { white-space: nowrap; }
+#set-mac .row > .grow.s { flex: 0 0 auto; white-space: nowrap; }
+#set-mac .row > .grow.s + div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.trend-head .now { margin-left: auto; font-weight: 600; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.trend .chart { margin-top: 4px; }
+.trend .chart svg { touch-action: pan-y; }
+.trend .tip { white-space: normal; width: max-content; max-width: min(260px, calc(100% - 4px)); text-align: center; }
+.stack-bar { display: flex; height: 16px; border-radius: 8px; overflow: hidden; background: var(--fill); gap: 2px; margin: 8px 0 10px; }
+.stack-bar i { display: block; height: 100%; min-width: 2px; }
+.mem-legend .row { padding: 7px 0; }
+.mem-legend .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.mem-legend .v { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mem-legend .s { white-space: normal; }
+.proc-tbl td.r, .proc-tbl th.r { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.proc-tbl td:first-child { overflow-wrap: anywhere; }
+#set-mac summary { padding: 10px 0; min-height: 40px; cursor: pointer; }
+.series-3 { background: var(--series-3); } .series-4 { background: var(--series-4); }
+
+/* ===== member editor on phones ===== */
+details > summary { min-height: 40px; display: flex; align-items: center; gap: 6px; padding: 8px 0; margin-top: 0; }
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸"; font-size: .9em; transition: transform .2s; }
+details[open] > summary::before { transform: rotate(90deg); }
+.sheet .seg button { white-space: nowrap; padding-left: 2px; padding-right: 2px; }
+@media (max-width: 360px) { .sheet .seg button { font-size: 12.5px; } .sheet .seg { gap: 2px; } }
+/* fixed height: switching tabs must not make the sheet (and its tab bar) jump under your finger */
+@media (max-width: 819px) { .sheet-box { height: calc(100% - 28px - env(safe-area-inset-top)); height: calc(100svh - 28px - env(safe-area-inset-top)); } .sheet-body { flex: 1; } }
+.mrow .t { display: flex !important; align-items: center; gap: 6px; flex-wrap: wrap; white-space: normal; }
+.mrow .t > .pill { flex: none; }
+
+/* ===== security page ===== */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sec-score { display: flex; align-items: center; gap: 16px; }
+.sec-score .ringbox { width: 92px; height: 92px; flex: none; }
+.sec-score .big { font-size: 20px; font-weight: 800; }
+.chk { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--grid); align-items: flex-start; }
+.chk:first-child { border-top: 0; }
+.chk .ic { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; margin-top: 1px; }
+.chk .ic.ok { background: var(--good); } .chk .ic.warn { background: #e08a00; } .chk .ic.bad { background: var(--bad); } .chk .ic.info, .chk .ic.unknown { background: var(--muted); }
+.chk .grow { min-width: 0; } .chk .t { font-weight: 650; } .chk .s { font-size: 13px; color: var(--text-2); margin-top: 2px; overflow-wrap: anywhere; }
+.chk .fix { font-size: 12px; margin-top: 6px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.chk .fix code { font-size: 12px; padding: 3px 7px; border-radius: 7px; background: var(--fill); overflow-wrap: anywhere; }
+.sec-ev .k { font-weight: 650; } .sec-ev .ip { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.lvl { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; }
+.lvl.bad { color: var(--bad); } .lvl.warn { color: #c77700; } .lvl.info { color: var(--muted); }
+
+/* installs without the Shadowrocket feature (config.json "shadowrocket": false) */
+html.no-sr .feat-sr { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="liveDot"></span>
+  <div class="titles"><h1 id="pageTitle">首頁</h1><div class="subtitle" id="pageSub"></div></div>
+  <button class="theme-btn bell" id="bellBtn" hidden aria-label="通知"><i data-ic="bell"></i><span class="bell-dot" id="bellDot" hidden></span></button>
+  <button class="theme-btn" id="themeBtn" title="切換深色 / 淺色" aria-label="切換深色 / 淺色"></button>
+  <span class="me" id="me"></span>
+</header>
+<nav id="nav"></nav>
+<main>
+
+<!-- 首頁 -->
+<section data-tab="home">
+  <div class="stack">
+    <div class="card hero" id="hero"><div class="hi" id="heroHi"></div><div class="name" id="heroName">家用控制台</div><div class="chips" id="heroChips"></div></div>
+    <div class="grid tiles4" id="tiles"></div>
+    <div class="section-title">快速操作</div>
+    <div class="quick" id="quickCard">
+      <button class="qbtn" data-quick="pause10"></button>
+      <button class="qbtn" data-quick="awake"></button>
+      <button class="qbtn" data-quick="screen"></button>
+      <button class="qbtn" data-quick="shot"></button>
+    </div>
+    <img class="shot" id="quickShot" hidden alt="Mac 螢幕截圖">
+    <div class="section-title">最近動態</div>
+    <div class="card list"><div id="events"></div></div>
+    <div hidden><div id="homeDevices"></div><span id="tsSum"></span></div>
+  </div>
+</section>
+
+<!-- 雲端 -->
+<section data-tab="cloud">
+  <div class="stack">
+    <div class="card" id="driveCard"><h2>雲端硬碟<span class="sp"></span><span class="small muted" id="driveDisk"></span></h2><div id="drive"></div></div>
+    <div class="card" id="diskCard"><h2>硬碟資訊<span class="sp"></span><span class="small muted" id="diskIo"></span></h2><div id="diskInfo"><div class="skel"><i></i><i></i><i></i></div></div></div>
+    <div class="section-title">每個人的用量</div>
+    <div class="card list" id="driveUsage"><div class="skel"><i></i><i></i><i></i></div></div>
+    <div class="small muted pad">在「成員」裡打開某人的「雲端」，設定容量和共用資料夾權限。成員用他的客戶端網址存取自己的雲端。</div>
+    <div class="card"><h2>分享連結</h2><div id="shareList"><div class="skel"><i></i><i></i><i></i></div></div></div>
+    <div class="card" id="backupCard"><h2>自動備份</h2><div id="backupInfo"><div class="skel"><i></i><i></i><i></i></div></div></div>
+  </div>
+</section>
+
+<!-- 擋廣告 -->
+<section data-tab="adblock">
+  <div class="seg" data-seg="ad"><button data-pane="ad-overview" class="on">總覽</button><button data-pane="ad-log">紀錄</button><button data-pane="ad-rules">規則</button></div>
+  <div class="pane stack" id="ad-overview">
+    <div class="card">
+      <div class="row big">
+        <div class="grow"><div class="t" id="protText">—</div><div class="s" id="protSub"></div></div>
+        <label class="switch"><input type="checkbox" id="protSwitch"><span></span></label>
+      </div>
+      <div class="btns" style="margin-top:10px">
+        <button class="btn sm" data-pause="10">暫停 10 分</button>
+        <button class="btn sm" data-pause="60">暫停 1 小時</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>DNS 查詢（近 24 小時）<span class="sp"></span><span class="small muted" id="dnsSum"></span></h2>
+      <div class="legend"><span><i style="background:var(--series-1)"></i>放行</span><span><i style="background:var(--series-2)"></i>已擋</span></div>
+      <div class="chart" id="hourChart"></div>
+      <details><summary>表格檢視</summary><div id="hourTable"></div></details>
+    </div>
+    <div class="section-title">最常被擋 <span class="muted">・點一下可放行</span></div>
+    <div class="card"><div class="bars blocked" id="topBlocked"></div></div>
+    <div class="section-title">最常查詢 <span class="muted">・點一下可封鎖</span></div>
+    <div class="card"><div class="bars" id="topQueried"></div></div>
+  </div>
+  <div class="pane stack" id="ad-log" hidden>
+    <div class="card">
+      <div class="inline" style="margin-bottom:8px">
+        <input type="search" id="logSearch" placeholder="搜尋網域或裝置 IP" autocapitalize="off">
+        <select id="logStatus" style="max-width:110px"><option value="all">全部</option><option value="blocked">已擋</option><option value="processed">放行</option></select>
+      </div>
+      <label class="small muted"><input type="checkbox" id="logAuto" checked> 自動更新</label>
+      <div class="log" id="logList"></div>
+    </div>
+  </div>
+  <div class="pane stack" id="ad-rules" hidden>
+    <div class="card">
+      <h2>一鍵封鎖 App / 網站<span class="sp"></span><span class="small muted" id="svcCount"></span></h2>
+      <div class="chips" id="svcGroups"></div>
+      <input type="search" id="svcSearch" placeholder="搜尋 YouTube、TikTok…" style="margin-bottom:10px">
+      <div class="svc-grid" id="svcGrid"><div class="skel"><i></i><i></i><i></i></div></div>
+    </div>
+    <div class="card">
+      <h2>自訂規則</h2>
+      <div class="inline">
+        <input type="text" id="ruleDomain" placeholder="例如 tiktok.com" autocapitalize="off" autocorrect="off">
+        <button class="btn danger" id="ruleBlock">封鎖</button>
+        <button class="btn" id="ruleAllow">放行</button>
+      </div>
+      <div id="rules" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h2>過濾清單<span class="sp"></span><button class="btn sm" id="refreshBtn">更新</button><button class="btn sm" id="cacheBtn">清快取</button></h2>
+      <div id="filters"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 遙控 -->
+<section data-tab="remote">
+  <div class="stack">
+    <div class="card">
+      <h2>音樂</h2>
+      <div class="np" id="np"></div>
+      <div class="media-btns">
+        <button class="btn round" data-media="prev"><i data-ic="prev"></i></button>
+        <button class="btn primary round big" data-media="playpause"><i data-ic="playpause"></i></button>
+        <button class="btn round" data-media="next"><i data-ic="next"></i></button>
+      </div>
+      <div class="vol"><button class="btn sm round" id="muteBtn"><i data-ic="mute"></i></button><input type="range" id="vol" min="0" max="100"><span class="small muted" id="volVal"></span></div>
+    </div>
+    <div class="card">
+      <h2>螢幕</h2>
+      <div class="quick two">
+        <a class="qbtn" id="webVnc" target="_blank" rel="noopener"><i data-ic="pointer"></i><span>遠端操控</span></a>
+        <button class="qbtn" id="shotBtn"><i data-ic="camera"></i><span>擷取畫面</span></button>
+        <button class="qbtn" id="sleepBtn"><i data-ic="moon"></i><span>關螢幕</span></button>
+        <label class="qbtn switchbtn"><i data-ic="coffee"></i><span>防止睡眠</span><span class="switch"><input type="checkbox" id="awakeSwitch"><span></span></span></label>
+      </div>
+      <div class="small muted" style="margin-top:10px">遠端操控：按「連線」後輸入 Mac 的使用者名稱 <code>hitachi</code> 和開機密碼。</div>
+      <img class="shot" id="shot" hidden alt="Mac 螢幕截圖">
+    </div>
+    <div class="card">
+      <h2>傳訊息給 Mac</h2>
+      <input type="text" id="msg" placeholder="輸入文字…">
+      <div class="btns" style="margin-top:8px">
+        <button class="btn primary" id="notifyBtn"><i data-ic="message"></i>跳出通知</button>
+        <button class="btn" id="sayBtn"><i data-ic="speak"></i>念出來</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>剪貼簿同步</h2>
+      <textarea id="clip" placeholder="Mac 剪貼簿內容會出現在這裡"></textarea>
+      <div class="btns" style="margin-top:8px">
+        <button class="btn" id="clipGet"><i data-ic="down"></i>讀取</button>
+        <button class="btn primary" id="clipSet"><i data-ic="up"></i>送到 Mac</button>
+        <button class="btn" id="clipCopy"><i data-ic="clipboard"></i>複製</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>在 Mac 上開網址</h2>
+      <div class="inline"><input type="url" id="url" placeholder="https://…" autocapitalize="off"><button class="btn primary" id="openBtn"><i data-ic="globe"></i>開啟</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 成員 -->
+<section data-tab="members">
+  <div class="seg" data-seg="mem"><button data-pane="mem-people" class="on">成員</button><button data-pane="mem-sr" class="feat-sr">Shadowrocket</button><button data-pane="mem-msgs">留言<span class="segcount" id="msgCount"></span></button></div>
+  <div class="pane stack" id="mem-people">
+    <div id="memBanner"></div>
+    <div class="card list">
+      <div class="row"><span class="badge devbadge" style="--c:#ffcc00"><i data-ic="crown"></i></span><div class="grow"><div class="t" id="memOwner"></div><div class="s">擁有者・全部權限</div></div></div>
+      <div id="memList"><div class="skel"><i></i><i></i><i></i></div></div>
+    </div>
+    <div class="inline">
+      <input type="text" id="memAdd" placeholder="Tailscale 帳號或名字" autocapitalize="off" autocorrect="off">
+      <button class="btn" id="memAddBtn"><i data-ic="plus"></i>新增</button>
+    </div>
+    <div class="small muted pad feat-sr">有 @ 的是 Tailscale 帳號；只打名字就是只用 Shadowrocket 的成員。</div>
+    <button class="btn primary wide" id="memSave"><i data-ic="save"></i>儲存並套用</button>
+    <details class="card summary"><summary class="sumhead">權限總覽</summary><div id="memSummary"></div></details>
+    <div class="section-title right"><button class="btn sm" id="memReload"><i data-ic="refresh"></i>重新整理</button></div>
+  </div>
+  <div class="pane stack" id="mem-msgs" hidden>
+    <div class="card list" id="msgList"><div class="skel"><i></i><i></i><i></i></div></div>
+    <div class="small muted pad">成員可以在自己的專屬網頁留言給你，例如申請延長期限、加大雲端容量。你的回覆會顯示在他的網頁上。</div>
+  </div>
+  <div class="pane stack" id="mem-sr" hidden>
+    <div id="srBanner"></div>
+    <div class="card list"><div id="srList"><div class="skel"><i></i><i></i><i></i></div></div></div>
+    <div class="small muted pad">每個帳號一組金鑰。成員的期限、時段、上網限制也會套用到他的 Shadowrocket。只有你的帳號能連回控制台。</div>
+    <div class="section-title right"><button class="btn sm" id="srReload"><i data-ic="refresh"></i>重新整理</button></div>
+  </div>
+</section>
+
+<!-- 設定 -->
+<section data-tab="settings">
+  <div class="seg" data-seg="set"><button data-pane="set-devices" class="on">裝置</button><button data-pane="set-mac">Mac</button><button data-pane="set-services">服務</button><button data-pane="set-notify">通知</button><button data-pane="set-security">安全</button></div>
+  <div class="pane stack" id="set-devices">
+    <div class="card kv-wrap"><h2>這台 Mac</h2><div id="selfInfo"></div></div>
+    <div class="card"><h2>所有裝置</h2><div id="devList"></div></div>
+    <div class="card">
+      <h2>網路品質檢測<span class="sp"></span><button class="btn sm" id="netcheckBtn">開始</button></h2>
+      <div id="netcheck" class="small muted">測試到各地中繼站的延遲、UDP 是否通、對外 IP。</div>
+    </div>
+    <div class="card"><h2>網速測試<span class="sp"></span><button class="btn sm" id="speedBtn">開始</button></h2>
+      <div id="speedOut" class="small muted">測量這支手機連回家的下載和上傳速度（約用掉 15 MB 流量）</div></div>
+  </div>
+  <div class="pane stack" id="set-services" hidden>
+    <div class="card"><h2>服務狀態</h2><div id="svcList"></div></div>
+  </div>
+  <div class="pane stack" id="set-mac" hidden>
+    <div class="card"><div class="mac-hero" id="macHero"><div class="skel" style="flex:1"><i></i><i></i></div></div></div>
+    <div class="mac-live" id="macLive"></div>
+    <div class="card"><h2>趨勢</h2><div class="chipbtns" id="macRange"><button class="chipbtn" data-h="1">1 小時</button><button class="chipbtn" data-h="6">6 小時</button><button class="chipbtn on" data-h="24">24 小時</button></div>
+      <div id="macTrends"><div class="skel"><i></i><i></i><i></i></div></div>
+      <details style="margin-top:10px"><summary>表格檢視</summary><div id="macTable"></div></details></div>
+    <div class="card"><h2>電池</h2><div id="macBat"></div></div>
+    <div class="card"><h2>記憶體</h2><div id="macMem"></div></div>
+    <div class="card"><h2>網路</h2><div id="macNet"></div></div>
+    <div class="card"><h2>最耗資源的程式</h2><div class="chipbtns" id="macProcSort" style="margin-bottom:8px"><button class="chipbtn on" data-k="cpu">依 CPU</button><button class="chipbtn" data-k="mem">依記憶體</button></div><div id="procs"></div></div>
+    <div class="card"><h2>系統</h2><div id="sysInfo"></div></div>
+  </div>
+  <div class="pane stack" id="set-notify" hidden>
+    <div class="card" id="pushCard"><h2>推播通知</h2><div id="pushInfo"><div class="skel"><i></i><i></i><i></i></div></div></div>
+    <div class="section-title">要收哪些通知</div>
+    <div class="card list" id="notifyPrefs"></div>
+  </div>
+  <div class="pane stack" id="set-security" hidden>
+    <div class="card" id="secScore"><div class="skel"><i></i><i></i><i></i></div></div>
+    <div class="card"><h2>健康檢查</h2><div id="secChecks"></div></div>
+    <div class="card"><h2>過去 24 小時的可疑事件</h2><div id="secChart"></div><div id="secKinds"></div>
+      <details><summary>表格檢視</summary><div id="secTable"></div></details></div>
+    <div class="card"><h2>自我攻擊測試</h2><div id="secTest"></div></div>
+    <div class="card"><h2>封鎖中的位址</h2><div id="secBans"></div>
+      <div class="inline" style="margin-top:10px"><input type="text" id="secBanIp" placeholder="手動封鎖 IP" autocapitalize="off" autocorrect="off" inputmode="decimal"><button class="btn" id="secBanBtn">封鎖 24 小時</button></div></div>
+    <div class="card"><h2>最近的安全事件</h2><div id="secEvents"></div></div>
+    <div class="card" id="lockCard"><h2>控制台鎖</h2><div id="lockInfo"></div></div>
+    <div class="card" id="kickCard">
+      <h2>踢裝置設定</h2>
+      <div id="kickStatus" class="small"></div>
+      <details style="margin-top:8px" id="kickSetup">
+        <summary>連結 Tailscale API ／ 更改踢人密碼</summary>
+        <ol class="small muted" style="padding-left:18px;margin:8px 0">
+          <li>先在 <a href="https://login.tailscale.com/admin/acls" target="_blank" rel="noopener">Access controls</a> 建一個 tag，例如 <code>tag:homepanel</code></li>
+          <li>打開 <a href="https://login.tailscale.com/admin/settings/oauth" target="_blank" rel="noopener">Settings → OAuth clients</a>，按 <b>Generate OAuth client</b></li>
+          <li>權限勾 <b>Devices → Core → Write</b> 和 <b>Policy file → Write</b>，Tags 選 <code>tag:homepanel</code></li>
+          <li>把 Client ID 和 Client secret 貼到下面</li>
+        </ol>
+        <div class="stack" style="gap:8px">
+          <input type="text" id="kcId" placeholder="Client ID" autocomplete="off" autocapitalize="off">
+          <input type="password" id="kcSecret" placeholder="Client secret（tskey-client-…）" autocomplete="off">
+          <details><summary>或改用 API access token（90 天過期）</summary>
+            <input type="password" id="kcKey" placeholder="tskey-api-…" autocomplete="off" style="margin-top:8px">
+          </details>
+          <input type="password" id="kcNew" placeholder="新的踢人密碼（不改就留空）" autocomplete="new-password">
+          <input type="password" id="kcCur" placeholder="目前的踢人密碼（必填）" autocomplete="off">
+          <button class="btn primary" id="kcSave">儲存</button>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+</main>
+<div class="toast" id="toast"></div>
+<div class="sheet" id="notifSheet" hidden>
+  <div class="sheet-box">
+    <div class="sheet-head"><span class="badge devbadge" style="--c:#ff9f0a"><i data-ic="bell"></i></span><div class="t">通知</div><button class="done" id="notifDone">完成</button></div>
+    <div class="sheet-body" id="notifBody"></div>
+  </div>
+</div>
+<div class="sheet" id="memSheet" hidden>
+  <div class="sheet-box">
+    <div class="sheet-head"><span id="sheetBadge"></span><div class="t" id="sheetTitle"></div><button class="done" id="sheetDone">完成</button></div>
+    <div class="seg" id="sheetSeg"><button data-sg="basic" class="on">基本</button><button data-sg="conn">連線</button><button data-sg="cloud">雲端</button><button data-sg="limit">限制</button><button data-sg="panel">控制台</button><button data-sg="report">報表</button></div>
+    <div class="sheet-body" id="sheetBody" data-show="basic"></div>
+  </div>
+</div>
+<div class="lock" id="lock" hidden>
+  <div class="lock-box">
+    <span class="badge lock-ic" style="--c:#5e5ce6"><i data-ic="lock"></i></span>
+    <div class="lock-title" id="lockTitle">輸入密碼</div>
+    <div class="lock-sub" id="lockSub"></div>
+    <div class="lock-dots" id="lockDots"><i></i><i></i><i></i><i></i></div>
+    <div class="lock-err" id="lockErr"></div>
+    <div class="keypad" id="keypad">
+      <button class="key" data-k="1">1</button><button class="key" data-k="2">2</button><button class="key" data-k="3">3</button>
+      <button class="key" data-k="4">4</button><button class="key" data-k="5">5</button><button class="key" data-k="6">6</button>
+      <button class="key" data-k="7">7</button><button class="key" data-k="8">8</button><button class="key" data-k="9">9</button>
+      <button class="key fn" id="keyFace" aria-label="Face ID"><i data-ic="faceid"></i></button><button class="key" data-k="0">0</button><button class="key fn" id="keyDel" aria-label="刪除"><i data-ic="backspace"></i></button>
+    </div>
+    <div class="lock-links"><button id="lockForgot">忘記密碼</button><button id="lockCancel" hidden>取消</button></div>
+    <div class="lock-extra" id="lockExtra" hidden></div>
+  </div>
+</div>
+<div class="modal" id="pwModal" hidden>
+  <form class="box" id="pwForm">
+    <h3 id="pwTitle">輸入密碼</h3>
+    <div class="small muted" id="pwDesc"></div>
+    <input type="password" id="pwInput" placeholder="輸入踢人密碼" autocomplete="off" style="margin-top:12px">
+    <div class="err" id="pwErr"></div>
+    <div class="btns" style="justify-content:flex-end;margin-top:6px">
+      <button type="button" class="btn" id="pwCancel">取消</button>
+      <button type="submit" class="btn primary" id="pwGo">確定</button>
+    </div>
+  </form>
+</div>
+<div class="modal" id="qrModal" hidden>
+  <div class="box" style="text-align:center">
+    <h3 id="qrTitle"></h3>
+    <div class="qr" id="qrBox"></div>
+    <div class="small muted">在 Shadowrocket 首頁按左上角的掃描圖示掃這個 QR code，<br>或在這支手機上直接按「用 Shadowrocket 開啟」</div>
+    <div class="btns" style="justify-content:center;margin-top:14px">
+      <a class="btn primary" id="qrOpen"></a>
+      <button class="btn" id="qrCopy"></button>
+      <button class="btn" id="qrClose">關閉</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="kickModal" hidden>
+  <form class="box" id="kickForm">
+    <h3><i data-ic="userx"></i> 踢出 <span id="kickName"></span>？</h3>
+    <div class="small muted">這台裝置會立刻被移出 VPN，要重新登入 Tailscale 才能再連回來。</div>
+    <input type="password" id="kickPw" placeholder="輸入踢人密碼" autocomplete="off" style="margin-top:12px">
+    <div class="err" id="kickErr"></div>
+    <div class="btns" style="justify-content:flex-end;margin-top:6px">
+      <button type="button" class="btn" id="kickCancel">取消</button>
+      <button type="submit" class="btn primary" style="background:var(--bad)" id="kickGo">踢出</button>
+    </div>
+  </form>
+</div>
+
+<script src="/static/qrcode.js"></script>
+<script src="/static/drive.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtN = n => (n ?? 0).toLocaleString("zh-TW");
+const fmtB = b => { if (b == null) return "—"; const u = ["B","KB","MB","GB","TB"]; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return (i ? b.toFixed(1) : b) + " " + u[i]; };
+const fmtDur = s => { const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return (d ? d + " 天 " : "") + (h ? h + " 小時 " : "") + m + " 分"; };
+const ago = t => { if (!t) return "—"; const s = (Date.now() - (typeof t === "number" ? t * 1000 : Date.parse(t))) / 1000;
+  if (s < 0 || isNaN(s)) return "—"; if (s < 60) return "剛剛"; if (s < 3600) return Math.floor(s / 60) + " 分鐘前"; if (s < 86400) return Math.floor(s / 3600) + " 小時前"; return Math.floor(s / 86400) + " 天前"; };
+const osIcon = os => icon({ macOS: "laptop", iOS: "phone", android: "phone", windows: "monitor", linux: "linux" }[os] || "plug");
+
+function toast(msg, ic) { const t = $("#toast"); t.innerHTML = (ic ? icon(ic) + " " : "") + esc(msg); t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2200); }
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const d = await r.json().catch(() => ({ ok: false, error: "HTTP " + r.status }));
+  if (d.locked) { showLock(d.setup ? "setup" : "unlock"); throw new Error("已上鎖"); }
+  if (d.ok === false && d.error) throw new Error(d.error);
+  return d;
+}
+async function act(name, arg = {}, okMsg) {
+  try {
+    const d = await api("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, arg }) });
+    if (d.ok === false) throw new Error(d.error || "失敗");
+    if (okMsg) toast(okMsg);
+    setTimeout(refresh, 400);
+    return d;
+  } catch (e) { toast(e.message, "alert"); throw e; }
+}
+
+// ---------- icons (Lucide-style line icons, ISC) ----------
+const IC = {
+  home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
+  devices: "M4 5h12v9H4zM2 18h12M18 8h4v12h-4zM20 17h.01",
+  shield: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4",
+  list: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
+  gamepad: "M6 12h4M8 10v4M15 13h.01M18 11h.01M17.3 5H6.7a4 4 0 0 0-3.95 3.4l-.9 6.2a3 3 0 0 0 5.3 2.3L8.5 15h7l1.35 1.9a3 3 0 0 0 5.3-2.3l-.9-6.2A4 4 0 0 0 17.3 5z",
+  folder: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
+  users: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
+  settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
+  cpu: "M9 9h6v6H9zM5 5h14v14H5zM9 2v3M15 2v3M9 19v3M15 19v3M19 9h3M19 15h3M2 9h3M2 15h3",
+  memory: "M2 7h20v9H2zM6 19v-3M10 19v-3M14 19v-3M18 19v-3M6 11h.01M10 11h.01M14 11h.01M18 11h.01",
+  disk: "M22 12H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11zM6 16h.01M10 16h.01",
+  battery: "M3 7h15a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM22 11v2M6 11v2M10 11v2",
+  wifi: "M5 12.55a11 11 0 0 1 14 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01",
+  zap: "M13 2 3 14h9l-1 8 10-12h-9z",
+  chart: "M3 3v18h18M7 16v-4M12 16V8M17 16v-7",
+  clock: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2",
+  laptop: "M4 5h16v10H4zM2 19h20",
+  gauge: "M12 14l4-4M3.34 19a10 10 0 1 1 17.32 0",
+  userx: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM17 8l5 5M22 8l-5 5",
+  ban: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM4.9 4.9l14.2 14.2",
+  search: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35",
+  grid: "M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z",
+  filter: "M22 3H2l8 9.46V19l4 2v-8.54z",
+  music: "M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
+  message: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
+  clipboard: "M9 2h6v4H9zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2",
+  globe: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20",
+  monitor: "M2 3h20v14H2zM8 21h8M12 17v4",
+  upload: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",
+  server: "M2 2h20v8H2zM2 14h20v8H2zM6 6h.01M6 18h.01",
+  activity: "M22 12h-4l-3 9L9 3l-3 9H2",
+  check: "M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11",
+  phone: "M7 2h10v20H7zM12 18h.01",
+  sun: "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42",
+  moon: "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z",
+  auto: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 2v20",
+  pause: "M6 4h4v16H6zM14 4h4v16h-4z",
+  coffee: "M17 8h1a4 4 0 1 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4zM6 2v2M10 2v2M14 2v2",
+  camera: "M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  plug: "M12 22v-5M9 8V2M15 8V2M18 8v5a6 6 0 0 1-12 0V8z",
+  prev: "M19 20 9 12l10-8zM5 19V5",
+  next: "M5 4l10 8-10 8zM19 5v14",
+  playpause: "M5 4l8 8-8 8zM15 5v14M20 5v14",
+  play: "M6 3l14 9-14 9z",
+  mute: "M11 5 6 9H2v6h4l5 4zM23 9l-6 6M17 9l6 6",
+  speak: "M11 5 6 9H2v6h4l5 4zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14",
+  download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
+  up: "M12 19V5M5 12l7-7 7 7",
+  down: "M12 5v14M19 12l-7 7-7-7",
+  pointer: "M3 3l7.07 16.97 2.51-7.39 7.39-2.51zM13 13l6 6",
+  power: "M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10",
+  calendar: "M3 4h18v18H3zM16 2v4M8 2v4M3 10h18",
+  alarm: "M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4l2 2M5 3 2 6M22 6l-3-3",
+  lock: "M5 11h14v10H5zM7 11V7a5 5 0 0 1 10 0v4",
+  key: "M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4",
+  crown: "M2 18h20M3 7l5 5 4-7 4 7 5-5-2 11H5z",
+  user: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  save: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8",
+  eye: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+  image: "M3 3h18v18H3zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21",
+  film: "M2 2h20v20H2zM7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5",
+  file: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6",
+  alert: "M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",
+  ok: "M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3",
+  x: "M18 6 6 18M6 6l12 12",
+  tick: "M20 6 9 17l-5-5",
+  sliders: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6",
+  eyeoff: "M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",
+  skull: "M12 2a8 8 0 0 0-8 8v4l2 2v4h12v-4l2-2v-4a8 8 0 0 0-8-8zM9 12h.01M15 12h.01M10 20v-2M14 20v-2",
+  linux: "M4 17h16M12 3a4 4 0 0 0-4 4v4l-3 6h14l-3-6V7a4 4 0 0 0-4-4z",
+  rocket: "M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09zM12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2zM9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5",
+  qr: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14v.01M14 20h.01M17 17h4v4h-4z",
+  cloud: "M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z",
+  folderplus: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 11v6M9 14h6",
+  more: "M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z",
+  edit: "M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z",
+  trash: "M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2",
+  archive: "M21 8v13H3V8M1 3h22v5H1zM10 12h4",
+  plus: "M12 5v14M5 12h14",
+  faceid: "M7 3H5a2 2 0 0 0-2 2v2M17 3h2a2 2 0 0 1 2 2v2M7 21H5a2 2 0 0 1-2-2v-2M17 21h2a2 2 0 0 0 2-2v-2M9 9v1M15 9v1M12 9v4h-1M9 16a4 4 0 0 0 6 0",
+  backspace: "M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM18 9l-6 6M12 9l6 6",
+  bell: "M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0",
+  link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
+  chevl: "M15 18l-6-6 6-6", chevr: "M9 18l6-6-6-6",
+  speed: "M12 14l4-4M3.34 19a10 10 0 1 1 17.32 0M12 14h.01",
+  inbox: "M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z",
+  reply: "M9 17l-5-5 5-5M20 18v-2a4 4 0 0 0-4-4H4",
+  send: "M22 2 11 13M22 2l-7 20-4-9-9-4z",
+  refresh: "M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15",
+  sort: "M3 6h13M3 12h9M3 18h5M17 8V20M17 20l-3-3M17 20l3-3",
+  move: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM10 13h6M13 10l3 3-3 3",
+  info: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01",
+  code: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M10 13l-2 2 2 2M14 13l2 2-2 2",
+};
+const C = { blue: "#0a84ff", green: "#30d158", orange: "#ff9f0a", red: "#ff453a", purple: "#bf5af2", pink: "#ff375f",
+  teal: "#32ade6", indigo: "#5e5ce6", yellow: "#ffcc00", gray: "#8e8e93", mint: "#00c7be" };
+const icon = n => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="${IC[n] || ""}"/></svg>`;
+const badge = (n, c, cls = "") => `<span class="badge ${cls}" style="--c:${C[c] || c}">${icon(n)}</span>`;
+// card titles → icon + colour (the leading emoji in the markup is replaced)
+const HEAD = [["快速操作","zap","orange"],["DNS 查詢","chart","blue"],["Tailscale 裝置","wifi","indigo"],["最近動態","clock","gray"],
+  ["這台 Mac","laptop","gray"],["所有裝置","devices","blue"],["網路品質","gauge","teal"],["踢裝置","userx","red"],
+  ["保護狀態","shield","green"],["最常被擋","ban","orange"],["最常查詢","search","blue"],["自訂規則","list","purple"],
+  ["一鍵封鎖","grid","red"],["過濾清單","filter","teal"],["即時查詢紀錄","list","blue"],["音樂","music","pink"],
+  ["傳訊息","message","green"],["剪貼簿","clipboard","orange"],["在 Mac 上開網址","globe","blue"],["螢幕","monitor","indigo"],
+  ["電源","zap","yellow"],["傳檔案到 Mac","upload","blue"],["傳輸箱","folder","teal"],["成員權限","users","purple"],
+  ["權限總覽","check","green"],["Shadowrocket","rocket","indigo"],["雲端硬碟","cloud","teal"],["硬碟資訊","disk","teal"],["分享連結","link","indigo"],["自動備份","archive","green"],["推播通知","bell","orange"],["網速測試","speed","teal"],["控制台鎖","lock","indigo"],["服務狀態","server","blue"],["系統","cpu","gray"],["最耗 CPU","activity","red"]];
+function decorateHeaders() {
+  $$(".card > h2").forEach(h => {
+    if (h.dataset.deco) return;
+    const first = h.firstChild; if (!first || first.nodeType !== 3) return;
+    const txt = first.textContent.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, "");
+    const m = HEAD.find(([k]) => txt.startsWith(k)); if (!m) return;
+    first.textContent = txt; h.insertAdjacentHTML("afterbegin", badge(m[1], m[2])); h.dataset.deco = "1";
+  });
+}
+decorateHeaders();
+$$("i[data-ic]").forEach(el => { el.outerHTML = icon(el.dataset.ic); });
+const PILLOK = '<span class="pill good">' + icon("tick") + ' ';
+[["pause10", "pause", "暫停擋廣告"], ["awake", "coffee", "防止睡眠"], ["screen", "moon", "關螢幕"], ["shot", "camera", "看 Mac 畫面"]]
+  .forEach(([q, i, t]) => { const b = document.querySelector(`[data-quick="${q}"]`); if (b) b.innerHTML = icon(i) + `<span>${t}</span>`; });
+
+// ---------- theme: auto → light → dark ----------
+const THEME_ICON = { auto: icon("auto"), light: icon("sun"), dark: icon("moon") };
+function currentTheme() { return document.documentElement.dataset.theme || "auto"; }
+function syncThemeColor() {
+  const dark = currentTheme() === "dark" || (currentTheme() === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+  $("#themeColor").content = dark ? "#05060a" : "#eef1f8";
+  $("#themeBtn").innerHTML = THEME_ICON[currentTheme()];
+}
+$("#themeBtn").onclick = () => {
+  const next = { auto: "light", light: "dark", dark: "auto" }[currentTheme()];
+  if (next === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("theme", next); } catch {}
+  syncThemeColor(); toast({ auto: "跟隨系統", light: "淺色模式", dark: "深色模式" }[next], { auto: "auto", light: "sun", dark: "moon" }[next]);
+  if (S) render(S);
+};
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncThemeColor);
+syncThemeColor();
+
+// ---------- tabs ----------
+const TABS = [["home","home","首頁"],["cloud","cloud","雲端"],["adblock","shield","擋廣告"],["remote","gamepad","遙控"],["members","users","成員"],["settings","settings","設定"]];
+const OLD_TAB = { devices: "settings", services: "settings", log: "adblock", files: "cloud" };
+$("#nav").innerHTML = TABS.map(([id, i, l]) => `<button data-go="${id}"><span class="i">${icon(i)}</span>${l}</button>`).join("");
+const WEEK = "日一二三四五六";
+function pageSub(tab) {
+  const d = new Date();
+  if (tab === "home") return `${d.getMonth() + 1}月${d.getDate()}日 星期${WEEK[d.getDay()]}`;
+  if (tab === "cloud" && S && S.drive) return `${fmtB(S.drive.free)} 可用`;
+  if (tab === "adblock" && S && S.adguard && S.adguard.ok) return S.adguard.protection ? `保護中・今天已擋 ${fmtN(S.adguard.blocked)} 筆` : "已暫停";
+  if (tab === "remote") return "控制家裡的 Mac";
+  if (tab === "members") return "誰可以用、可以用什麼";
+  if (tab === "settings") return "裝置、服務與安全";
+  return "";
+}
+function setTitle(tab) {
+  const t = TABS.find(x => x[0] === tab);
+  $("#pageTitle").textContent = t ? t[2] : "家用控制台";
+  $("#pageSub").textContent = pageSub(tab);
+}
+function show(tab) {
+  tab = OLD_TAB[tab] || tab;
+  if (!TABS.some(t => t[0] === tab)) tab = "home";
+  setTitle(tab);
+  $$("section[data-tab]").forEach(s => s.classList.toggle("show", s.dataset.tab === tab));
+  $$("nav button").forEach(b => b.classList.toggle("active", b.dataset.go === tab));
+  try { localStorage.setItem("tab", tab); } catch {}
+  if (location.hash.slice(1) !== tab) history.replaceState(null, "", "#" + tab);
+  if (tab === "cloud") { initDrive(); loadShares(); loadBackup(); }
+  if (tab === "remote") setTimeout(loadMedia, 0);
+  if (tab === "members") { loadMembers(); loadProxy(); loadMsgs(); }
+  if (tab === "settings") { loadNotify(); api("/api/arrival").then(d => { ARR = d.prefs || {}; refresh(true); }).catch(() => {}); }
+  onPane(tab);
+  window.scrollTo(0, 0);
+}
+// segmented controls: one visible pane per section
+function onPane() {
+  const vis = id => { const el = document.getElementById(id); return el && !el.hidden && el.closest("section").classList.contains("show"); };
+  if (vis("ad-log")) loadLog();
+  if (vis("ad-rules")) loadServices();
+  if (vis("set-mac")) macStart(); else macStop();
+  if (vis("set-security")) secStart(); else secStop();
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest(".seg button"); if (!b) return;
+  const seg = b.closest(".seg");
+  seg.querySelectorAll("button").forEach(x => { x.classList.toggle("on", x === b); const pane = document.getElementById(x.dataset.pane); if (pane) pane.hidden = x !== b; });
+  onPane();
+});
+$("#nav").onclick = e => { const b = e.target.closest("button"); if (b) show(b.dataset.go); };
+var saved = null; try { saved = localStorage.getItem("tab"); } catch {}
+// restore the last tab only after the whole script has run (later declarations are not initialised yet)
+setTimeout(() => show(location.hash.slice(1) || saved || "home"), 0);
+
+// ---------- Mac pane ----------
+var MAC = null, MACH = [], macTimer = null, macHistAt = 0, macRange = 24, macSort = "cpu";
+function macStart() { if (macTimer) return; loadMac(); macTimer = setInterval(loadMac, 5000); }
+function macStop() { clearInterval(macTimer); macTimer = null; }
+document.addEventListener("visibilitychange", () => { if (document.hidden) macStop(); else if (document.getElementById("set-mac") && !document.getElementById("set-mac").hidden && document.querySelector('section[data-tab="settings"]').classList.contains("show")) macStart(); });
+async function loadMac() {
+  if (document.hidden) return;
+  const wantHist = Date.now() - macHistAt > 60000;
+  try {
+    const d = await api("/api/mac" + (wantHist ? "?hist=1" : ""));
+    MAC = d; if (d.history) { MACH = d.history; macHistAt = Date.now(); }
+    renderMac(!!d.history);
+  } catch (e) { $("#macHero").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+const fmtRate = b => b == null ? "—" : b < 1024 ? Math.round(b) + " B/秒" : fmtB(b) + "/秒";
+const fmtMin = m => m == null ? "—" : m >= 60 ? `${Math.floor(m / 60)} 小時 ${m % 60} 分` : `${m} 分鐘`;
+const STAT = { good: "check", warn: "alert", bad: "alert" };
+const batState = b => b.charging ? "充電中" : b.plugged ? (b.full || b.percent >= 100 ? "已充飽・插電中" : "插電中・暫停充電") : "使用電池";
+const stat = (cls, text) => `<span class="stat ${cls}">${icon(STAT[cls])}${text}</span>`;
+function renderMac(newHist) {
+  const d = MAC; if (!d) return;
+  const hw = d.hw || {}, b = d.battery, m = d.memory || {}, n = d.network || {}, th = d.thermal || {}, sys = (S && S.system) || {};
+  $("#macHero").innerHTML = `${badge("laptop", "gray")}<div style="min-width:0"><div class="big">${esc(hw.name || "Mac")}</div>
+    <div class="small muted">${esc(hw.chip || "")}${hw.cores ? `・${hw.cores.total} 核心（${hw.cores.perf} 效能 + ${hw.cores.eff} 節能）` : ""}・${esc(hw.memory || "")} 記憶體</div>
+    <div class="small muted">macOS ${esc(hw.os || "")}・已開機 ${fmtDur(d.uptime_s || 0)}</div></div>`;
+  const pres = { normal: ["good", "正常"], warn: ["warn", "偏高"], critical: ["bad", "很緊"] }[m.pressure] || ["good", "正常"];
+  const therm = th.state === "throttled" ? ["bad", `過熱降速（${th.speed_limit}%）`] : th.state === "warm" ? ["warn", "偏熱"] : ["good", "正常"];
+  const live = [
+    ["CPU", `${Math.round(d.cpu)}%`, `負載 ${(d.load || [])[0]?.toFixed(2) ?? "—"}`],
+    ["記憶體壓力", stat(...pres), `已用 ${fmtB(m.used)} / ${fmtB(m.total)}`],
+    ["下載速度", fmtRate(n.rx_rate), n.iface ? `經由 ${esc(n.iface)}` : ""],
+    ["上傳速度", fmtRate(n.tx_rate), ""],
+    ["散熱", stat(...therm), b && b.temp_c ? `電池 ${b.temp_c}°C` : ""],
+  ];
+  if (b) live.splice(2, 0, ["電池", `${b.percent}%`, batState(b)]);
+  $("#macLive").innerHTML = live.map(([k, v, h]) => `<div class="card mini"><div class="k">${k}</div><div class="v">${v}</div><div class="h">${h}</div></div>`).join("");
+
+  // battery
+  if (b) {
+    const health = b.health == null ? "—" : b.health >= 80 ? stat("good", b.health + "%") : stat("warn", b.health + "%（建議更換）");
+    const power = b.watts > 0.2 ? `充電 ${b.watts} W` : b.watts < -0.2 ? `耗電 ${Math.abs(b.watts)} W` : "0 W";
+    $("#macBat").innerHTML = kv([["電量", `${b.percent}%・${batState(b)}`],
+      ["電池健康度", health + `<div class="small muted">現在能充到新電池的 ${b.health ?? "—"}%，低於 80% 才需要換</div>`],
+      ["充電循環", `${b.cycles ?? "—"} 次<div class="small muted">MacBook 設計可用 1000 次</div>`],
+      ["電池溫度", b.temp_c != null ? (b.temp_c >= 40 ? stat("warn", b.temp_c + "°C") : b.temp_c + "°C") : "—"],
+      ["電力", power + (b.adapter_w ? `・充電器 ${b.adapter_w} W` : "")],
+      ...(b.minutes_left ? [["還能用", fmtMin(b.minutes_left)]] : []), ...(b.minutes_to_full ? [["充滿還要", fmtMin(b.minutes_to_full)]] : [])]);
+  } else $("#macBat").innerHTML = `<div class="empty">這台 Mac 沒有電池</div>`;
+
+  // memory: one stacked bar, every segment labelled with its value in the legend below
+  const segs = [["app", "App 正在用", "var(--series-1)", "你打開的程式用的"], ["wired", "系統保留", "var(--series-2)", "macOS 核心一定要用的，不能釋放"],
+    ["compressed", "壓縮", "var(--series-3)", "記憶體不夠時，macOS 把資料壓縮起來塞"], ["cached", "快取", "var(--series-4)", "最近讀過的檔案，需要時會自動讓出來"]];
+  $("#macMem").innerHTML = `<div class="stack-bar" role="img" aria-label="記憶體分配">${segs.map(([k, l, c]) => `<i style="width:${(m[k] / m.total * 100).toFixed(2)}%;background:${c}" title="${l}"></i>`).join("")}</div>
+    <div class="mem-legend">${segs.map(([k, l, c, h]) => `<div class="row"><span class="sw" style="background:${c}"></span><div class="grow"><div class="t" style="font-weight:600">${l}</div><div class="s">${h}</div></div><span class="v">${fmtB(m[k])}</span></div>`).join("")}
+      <div class="row"><span class="sw" style="background:var(--fill);border:1px solid var(--grid)"></span><div class="grow"><div class="t" style="font-weight:600">空閒</div></div><span class="v">${fmtB(m.free)}</span></div></div>` +
+    kv([["記憶體壓力", stat(...pres)], ["交換空間（swap）", `${fmtB(m.swap_used)} / ${fmtB(m.swap_total)}<div class="small muted">記憶體不夠時暫放到硬碟，用很多代表該關掉一些程式</div>`]]);
+
+  // network
+  $("#macNet").innerHTML = kv([["連線方式", n.wifi ? `Wi-Fi（${esc(n.wifi)}）` : esc(n.iface || "—")], ["本機 IP", esc(n.ip || "—")], ["路由器", esc(n.gateway || "—")],
+    ["對外 IP", esc(sys.public_ip || "—")], ["現在速度", `${icon("down")} ${fmtRate(n.rx_rate)}・${icon("up")} ${fmtRate(n.tx_rate)}`],
+    ["開機後總共", `${icon("down")} ${fmtB(n.rx_total)}・${icon("up")} ${fmtB(n.tx_total)}`]]);
+
+  // programs
+  const pr = d.programs || {}, list = macSort === "mem" ? pr.by_mem : pr.by_cpu;
+  $("#procs").innerHTML = `<div class="small muted" style="margin-bottom:6px">${pr.apps || 0} 個程式、共 ${pr.count || 0} 個處理程序；同名的已合併計算</div><table class="tbl proc-tbl"><tr><th>程式</th><th class="r">CPU</th><th class="r">記憶體</th></tr>` +
+    (list || []).map(p => `<tr><td>${esc(p.name)}${p.n > 1 ? ` <span class="pill">×${p.n}</span>` : ""}</td><td class="r">${p.cpu.toFixed(1)}%</td><td class="r">${fmtB(p.mem)}</td></tr>`).join("") + `</table>`;
+  if (newHist || !$("#macTrends .trend")) renderMacTrends();  // charts change once a minute; redrawing every 5 s would wipe an open tooltip
+}
+function renderMacTrends() {
+  const cut = Date.now() / 1000 - macRange * 3600, pts = MACH.filter(p => p.t >= cut);
+  if (pts.length < 2) { $("#macTrends").innerHTML = `<div class="empty">正在收集資料，每分鐘記一筆，過幾分鐘就會出現圖表</div>`; $("#macTable").innerHTML = ""; return; }
+  const last = pts[pts.length - 1];
+  const charts = [["mcCpu", "CPU", [["cpu", "CPU", "var(--series-1)"]], 100, v => v.toFixed(0) + "%", `${Math.round(last.cpu)}%`],
+    ["mcMem", "記憶體", [["mem", "已用", "var(--series-1)"]], 100, v => v.toFixed(0) + "%", `${Math.round(last.mem)}%`],
+    ["mcNet", "網路", [["rx", "下載", "var(--series-1)"], ["tx", "上傳", "var(--series-2)"]], null, fmtRate, `↓ ${fmtRate(last.rx)}・↑ ${fmtRate(last.tx)}`]];
+  if (pts.some(p => p.bat != null)) charts.push(["mcBat", "電量", [["bat", "電量", "var(--series-1)"]], 100, v => v.toFixed(0) + "%", `${last.bat}%`]);
+  $("#macTrends").innerHTML = charts.map(([id, t, ser, , , now]) => `<div class="trend"><div class="trend-head"><b>${t}</b>${ser.length > 1 ? `<span class="legend" style="margin:0 0 0 6px">${ser.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("")}</span>` : ""}<span class="now">${now}</span></div><div class="chart" id="${id}"></div></div>`).join("");
+  charts.forEach(([id, , ser, max, fmt]) => trendChart($("#" + id), pts, ser, max, fmt));
+  const step = Math.max(1, Math.round(pts.length / 48));
+  $("#macTable").innerHTML = `<table class="tbl"><tr><th>時間</th><th class="r">CPU</th><th class="r">記憶體</th><th class="r">下載</th><th class="r">上傳</th><th class="r">電量</th></tr>` +
+    pts.filter((_, i) => i % step === 0).reverse().map(p => `<tr><td>${new Date(p.t * 1000).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false })}</td><td class="r">${p.cpu}%</td><td class="r">${p.mem}%</td><td class="r">${fmtRate(p.rx)}</td><td class="r">${fmtRate(p.tx)}</td><td class="r">${p.bat ?? "—"}%</td></tr>`).join("") + `</table>`;
+}
+// one measure per chart (no dual axis); 2px lines, recessive grid, crosshair + tooltip on hover/touch
+function trendChart(el, raw, ser, fixedMax, fmt) {
+  const W = Math.max(260, Math.round(el.clientWidth || 600)), H = 120, pl = 44, pb = 18, pt = 6;
+  const nb = Math.max(2, Math.floor((W - pl) / 2.5)), per = Math.ceil(raw.length / nb), pts = [];
+  for (let i = 0; i < raw.length; i += per) {  // average each bucket so a phone-wide chart isn't a solid smear
+    const g = raw.slice(i, i + per), o = { t: g[g.length - 1].t };
+    ser.forEach(([k]) => { const v = g.map(p => p[k]).filter(v => v != null); o[k] = v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; });
+    pts.push(o);
+  }
+  const n = pts.length, t0 = pts[0].t, t1 = pts[n - 1].t;
+  let max = fixedMax || Math.max(1, ...pts.flatMap(p => ser.map(([k]) => p[k] || 0)));
+  if (!fixedMax) { const st = Math.pow(10, Math.floor(Math.log10(max))); max = Math.ceil(max / st) * st; }
+  const x = t => pl + (t - t0) / Math.max(1, t1 - t0) * (W - pl), y = v => pt + (H - pt - pb) * (1 - Math.min(v, max) / max);
+  let g = "";
+  for (let k = 0; k <= 2; k++) { const v = max * k / 2, yy = y(v);
+    g += `<line x1="${pl}" x2="${W}" y1="${yy}" y2="${yy}" stroke="var(--grid)"/><text x="${pl - 6}" y="${yy + 4}" font-size="11" text-anchor="end" fill="var(--muted)">${fixedMax ? v + "%" : fmtB(v).replace(" ", "")}</text>`; }
+  const span = t1 - t0, every = span > 12 * 3600 ? 6 * 3600 : span > 3 * 3600 ? 3600 : 15 * 60;
+  for (let t = Math.ceil(t0 / every) * every; t <= t1; t += every) {
+    const d = new Date(t * 1000); g += `<text x="${x(t)}" y="${H - 4}" font-size="11" text-anchor="middle" fill="var(--muted)">${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}</text>`; }
+  const lines = ser.map(([k, , c]) => {
+    let dpath = "", gap = true;
+    pts.forEach((p, i) => { if (p[k] == null || (i && p.t - pts[i - 1].t > Math.max(300, per * 120))) { gap = true; if (p[k] == null) return; }
+      dpath += `${gap ? "M" : "L"}${x(p.t).toFixed(1)},${y(p[k]).toFixed(1)}`; gap = false; });
+    return `<path d="${dpath}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
+  }).join("");
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="趨勢圖">${g}${lines}<line class="xh" y1="${pt}" y2="${H - pb}" stroke="var(--muted)" stroke-dasharray="3 3" visibility="hidden"/>
+    ${ser.map(([, , c], i) => `<circle class="dot${i}" r="4" fill="${c}" stroke="var(--glass-strong)" stroke-width="2" visibility="hidden"/>`).join("")}
+    <rect x="${pl}" y="0" width="${W - pl}" height="${H}" fill="transparent"/></svg><div class="tip" hidden></div>`;
+  const svg = el.querySelector("svg"), tip = el.querySelector(".tip"), xh = svg.querySelector(".xh");
+  const move = e => {
+    const box = svg.getBoundingClientRect(), sx = box.width / W, vx = (e.clientX - box.left) / sx;
+    const tt = t0 + (vx - pl) / (W - pl) * (t1 - t0); let i = 0, best = 1e18;
+    pts.forEach((p, j) => { const dd = Math.abs(p.t - tt); if (dd < best) { best = dd; i = j; } });
+    const p = pts[i], px = x(p.t);
+    xh.setAttribute("x1", px); xh.setAttribute("x2", px); xh.setAttribute("visibility", "visible");
+    ser.forEach(([k], j) => { const c = svg.querySelector(".dot" + j); if (p[k] == null) { c.setAttribute("visibility", "hidden"); return; } c.setAttribute("cx", px); c.setAttribute("cy", y(p[k])); c.setAttribute("visibility", "visible"); });
+    tip.innerHTML = `<b>${new Date(p.t * 1000).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false })}</b>　` + ser.map(([k, l]) => `${l} ${p[k] == null ? "—" : fmt(p[k])}`).join("・");
+    tip.hidden = false; const tw = tip.offsetWidth / 2 + 2;  // keep the whole bubble on screen, even at the chart's edges
+    tip.style.left = Math.min(Math.max(px * sx, tw), box.width - tw) + "px"; tip.style.top = (y(Math.max(...ser.map(([k]) => p[k] || 0))) * sx) + "px";
+  };
+  const leave = () => { tip.hidden = true; xh.setAttribute("visibility", "hidden"); ser.forEach((_, j) => svg.querySelector(".dot" + j).setAttribute("visibility", "hidden")); };
+  svg.addEventListener("pointermove", move); svg.addEventListener("pointerdown", move);
+  svg.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") leave(); });  // a finger lifting off must not hide it
+  el._leave = leave;
+}
+document.addEventListener("pointerdown", e => { $$(".trend .chart").forEach(c => { if (c._leave && !c.contains(e.target)) c._leave(); }); });
+document.addEventListener("click", e => {
+  const r = e.target.closest("#macRange [data-h]");
+  if (r) { macRange = +r.dataset.h; $$("#macRange .chipbtn").forEach(b => b.classList.toggle("on", b === r)); renderMacTrends(); return; }
+  const k = e.target.closest("#macProcSort [data-k]");
+  if (k) { macSort = k.dataset.k; $$("#macProcSort .chipbtn").forEach(b => b.classList.toggle("on", b === k)); renderMac(false); return; }
+  const tl = e.target.closest("#tiles .tile");
+  if (tl && /CPU|記憶體/.test(tl.querySelector(".rl")?.textContent || "")) { show("settings"); const b = document.querySelector('[data-pane="set-mac"]'); if (b) b.click(); }
+});
+
+// ---------- charts ----------
+function hourChart(total, blocked) {
+  const el = $("#hourChart");
+  const n = total.length || 24, W = 600, H = 170, padL = 34, padB = 20, padT = 6;
+  const max = Math.max(4, ...total);
+  const step = Math.pow(10, Math.floor(Math.log10(max))); const nice = Math.ceil(max / step) * step;
+  const bw = (W - padL) / n, y = v => padT + (H - padT - padB) * (1 - v / nice);
+  const now = new Date();
+  const label = i => { const d = new Date(now.getTime() - (n - 1 - i) * 3600e3); return d.getHours() + ":00"; };
+  let g = "";
+  for (let k = 0; k <= 2; k++) { const v = nice * k / 2, yy = y(v);
+    g += `<line x1="${padL}" x2="${W}" y1="${yy}" y2="${yy}" stroke="var(--grid)"/><text x="${padL - 6}" y="${yy + 4}" font-size="11" text-anchor="end" fill="var(--muted)">${fmtN(v)}</text>`; }
+  let bars = "";
+  for (let i = 0; i < n; i++) {
+    const t = total[i] || 0, b = Math.min(blocked[i] || 0, t), a = t - b, x = padL + i * bw + 1.5, w = Math.max(bw - 3, 1);
+    const base = y(0);
+    // allowed on the baseline, blocked stacked above, 2px surface gap between segments
+    const ha = base - y(a), hb = base - y(b);
+    if (a > 0) bars += `<path d="${roundTop(x, base - ha, w, ha, b > 0 ? 0 : 3)}" fill="var(--series-1)"/>`;
+    if (b > 0) bars += `<path d="${roundTop(x, base - ha - hb, w, Math.max(hb - (a > 0 ? 2 : 0), 1), 3)}" fill="var(--series-2)"/>`;
+    bars += `<rect x="${padL + i * bw}" y="${padT}" width="${bw}" height="${H - padT - padB}" fill="transparent" data-i="${i}"/>`;
+    if (i % 6 === 0 || i === n - 1) bars += `<text x="${x + w / 2}" y="${H - 5}" font-size="11" text-anchor="middle" fill="var(--muted)">${label(i)}</text>`;
+  }
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="每小時 DNS 查詢數">${g}${bars}</svg><div class="tip" hidden></div>`;
+  const tip = el.querySelector(".tip"), svg = el.querySelector("svg");
+  const move = e => { const r = e.target.closest("rect[data-i]"); if (!r) { tip.hidden = true; return; }
+    const i = +r.dataset.i, box = svg.getBoundingClientRect(), sx = box.width / W;
+    tip.innerHTML = `<b>${label(i)}</b>　查詢 ${fmtN(total[i])}・已擋 ${fmtN(blocked[i])}`;
+    tip.style.left = Math.min(Math.max((padL + (i + .5) * bw) * sx, 80), box.width - 80) + "px"; tip.style.top = (y(total[i] || 0) * sx) + "px"; tip.hidden = false; };
+  svg.addEventListener("pointermove", move); svg.addEventListener("pointerdown", move); svg.addEventListener("pointerleave", () => tip.hidden = true);
+  $("#hourTable").innerHTML = `<table class="tbl"><tr><th>時間</th><th class="r">查詢</th><th class="r">已擋</th></tr>` +
+    total.map((t, i) => `<tr><td>${label(i)}</td><td class="r">${fmtN(t)}</td><td class="r">${fmtN(blocked[i])}</td></tr>`).reverse().join("") + `</table>`;
+}
+function roundTop(x, y, w, h, r) { r = Math.min(r, w / 2, h); return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`; }
+
+function barList(el, items, kind) {
+  const rows = items.map(o => Object.entries(o)[0]);
+  if (!rows.length) { el.innerHTML = `<div class="empty">還沒有資料</div>`; return; }
+  const max = Math.max(...rows.map(r => r[1]));
+  el.innerHTML = rows.map(([d, v]) => `<div class="b" data-d="${esc(d)}"><span class="n">${esc(d)}</span><span class="v">${fmtN(v)}</span>
+    <span class="track"><i style="width:${(v / max * 100).toFixed(1)}%"></i></span>
+    <span class="acts">${kind === "blocked" ? `<button class="btn sm" data-rule="allow">${icon("tick")}放行這個網域</button>` : `<button class="btn sm danger" data-rule="block">${icon("ban")}封鎖這個網域</button>`}</span></div>`).join("");
+}
+document.addEventListener("click", e => {
+  const rb = e.target.closest("[data-rule]");
+  if (rb) { const d = rb.closest("[data-d]").dataset.d; const k = rb.dataset.rule;
+    act("agh_rule", { domain: d, kind: k }, (k === "block" ? "已封鎖 " : k === "allow" ? "已放行 " : "已移除 ") + d); return; }
+  const b = e.target.closest(".bars .b"); if (b) b.classList.toggle("open");
+});
+
+// ---------- render ----------
+var S = null;  // var, not let: the tab restore at startup reads it before this line runs
+const TAB_CAP = { home: null, cloud: "owner", adblock: ["adblock", "log"], remote: ["remote", "screen"], members: "owner", settings: null };
+const PANE_CAP = { "ad-overview": "adblock", "ad-rules": "adblock", "ad-log": "log", "set-devices": "view", "set-services": "owner", "set-security": null, "set-notify": "owner", "set-mac": "view" };
+function applyRole(me) {
+  document.documentElement.classList.toggle("no-sr", !!(S && S.features && !S.features.shadowrocket));
+  const caps = new Set(me.caps || []), owner = me.role === "owner";
+  const allowed = id => { const c = TAB_CAP[id]; if (c === null) return true; if (c === "owner") return owner; return [].concat(c).some(x => caps.has(x)); };
+  $$("nav button").forEach(b => b.hidden = !allowed(b.dataset.go));
+  $$(".seg button").forEach(b => { const c = PANE_CAP[b.dataset.pane]; b.hidden = c === "owner" ? !owner : c ? !caps.has(c) : false; });
+  $$(".seg").forEach(seg => { const on = seg.querySelector("button.on"); if (on && on.hidden) { const first = seg.querySelector("button:not([hidden])"); if (first) first.click(); } });
+  const cur = document.querySelector("section[data-tab].show");
+  if (cur && !allowed(cur.dataset.tab)) show("home");
+  // hide controls this person can't use
+  $$("[data-quick]").forEach(b => { const need = { pause10: "adblock", awake: "remote", screen: "remote", shot: "screen" }[b.dataset.quick]; b.hidden = !caps.has(need); });
+  $("#quickCard").hidden = !$$("[data-quick]").some(b => !b.hidden);
+  [["#np", "remote"], ["#msg", "remote"], ["#url", "remote"], ["#clip", "screen"]].forEach(([sel, c]) => { const card = $(sel).closest(".card"); card.hidden = !caps.has(c); });
+  $("#shotBtn").closest(".card").hidden = !caps.has("remote") && !caps.has("screen");
+  ["#webVnc", "#sleepBtn"].forEach(sel => $(sel).hidden = !caps.has("remote"));
+  $("#awakeSwitch").closest(".qbtn").hidden = !caps.has("remote");
+  $("#shotBtn").hidden = !caps.has("screen");
+  $("#kickCard").hidden = !owner;
+  $("#bellBtn").hidden = !owner;
+  if (owner && !NOTIFY) loadNotify();
+  document.body.classList.toggle("is-owner", owner);
+}
+function renderMedia(d) {
+  const m = d.media;
+  $("#np").innerHTML = m && m.track ? `<div class="art">${icon(m.state === "playing" ? "music" : "pause")}</div><div class="grow" style="min-width:0"><div class="t">${esc(m.track)}</div><div class="s">${esc(m.artist)}・${esc(m.app)}</div></div>`
+    : `<div class="art">${icon("music")}</div><div class="muted">${m ? esc(m.app) + " 沒有在播放" : "Spotify / 音樂 App 沒有開"}</div>`;
+  if (d.volume && d.volume.level != null && document.activeElement !== $("#vol")) { $("#vol").value = d.volume.level; $("#volVal").textContent = d.volume.muted ? "（靜音）" : d.volume.level; }
+}
+function render(d) {
+  S = d;
+  if (d.me) applyRole(d.me);
+  renderHero(d);
+  const sys = d.system || {}, ts = d.tailscale || {}, ag = d.adguard || {}, sv = d.services || {};
+  if (!d.system) { $("#tiles").innerHTML = `<div class="card tile"><div class="label">歡迎</div><div class="value" style="font-size:18px">${esc((d.me && (d.me.name || d.me.login)) || "")}</div><div class="sub">用下方分頁使用你被允許的功能</div></div>`; }
+  $("#liveDot").className = "dot on";
+  if (d.me && d.me.login) $("#me").innerHTML = (d.me.pic ? `<img src="${esc(d.me.pic)}" alt="">` : "") + `<span>${esc(d.me.name || d.me.login)}</span>`;
+
+  // tiles
+  const memPct = sys.mem_total ? sys.mem_used / sys.mem_total * 100 : 0, diskPct = sys.disk_total ? sys.disk_used / sys.disk_total * 100 : 0;
+  const blockPct = ag.queries ? ag.blocked / ag.queries * 100 : 0;
+  const online = (ts.peers || []).filter(p => p.online).length + (ts.ok ? 1 : 0), all = (ts.peers || []).length + (ts.ok ? 1 : 0);
+  if (d.system) { HIST.cpu.push(sys.cpu_pct || 0); HIST.mem.push(memPct); HIST.cpu = HIST.cpu.slice(-60); HIST.mem = HIST.mem.slice(-60); }
+  const curTab = document.querySelector("section[data-tab].show"); if (curTab) $("#pageSub").textContent = pageSub(curTab.dataset.tab);
+  if (d.system) $("#tiles").innerHTML = [
+    d.drive ? tile("雲端硬碟", `${(d.drive.used / d.drive.total * 100).toFixed(0)}%`, `${fmtB(d.drive.free)} 可用`, d.drive.used / d.drive.total * 100)
+            : tile("雲端硬碟", "未接上", "外接硬碟沒有接上", null),
+    tile("擋廣告", ag.ok ? (ag.protection ? `${blockPct.toFixed(0)}%` : "暫停") : "離線", ag.ok ? `已擋 ${fmtN(ag.blocked)} 筆` : esc(ag.error || ""), ag.ok && ag.protection ? blockPct : null),
+    tile("CPU", `${Math.round(sys.cpu_pct ?? 0)}%`, `負載 ${(sys.load || [])[0]?.toFixed(1) ?? "—"}`, sys.cpu_pct, HIST.cpu),
+    tile("記憶體", `${memPct.toFixed(0)}%`, `${fmtB(sys.mem_used)} / ${fmtB(sys.mem_total)}`, memPct, HIST.mem),
+  ].join("");
+  void diskPct; void online; void all;
+
+  // DNS chart
+  if (ag.ok) { hourChart(ag.hourly_total || [], ag.hourly_blocked || []); $("#dnsSum").textContent = `平均 ${ag.avg_ms} ms`; }
+  else $("#hourChart").innerHTML = `<div class="empty">AdGuard 沒有回應：${esc(ag.error)}</div>`;
+
+  // devices
+  const devRow = (p, detail) => `<div class="row">${badge(p.os === "iOS" || p.os === "android" ? "phone" : "laptop", p.online ? (p.self ? "blue" : "green") : "gray", "devbadge")}
+    <div class="grow"><div class="t">${esc(p.name)} ${p.self ? '<span class="pill">這台</span>' : ""}</div>
+    <div class="s">${esc(p.ips[0] || "")}${detail ? "・" + (p.self ? esc(p.dns) : p.online ? (p.direct ? "直連 " + esc(p.cur_addr) : "中繼 " + esc(p.relay || "")) : "最後上線 " + ago(p.last_seen)) : ""}</div>
+    ${detail && !p.self ? `<div class="s">${icon("down")} ${fmtB(p.rx)}・${icon("up")} ${fmtB(p.tx)}${p.exit_node ? "・<b>正在當出口</b>" : ""}</div>` : ""}</div>
+    <span class="dot ${p.online ? "on" : "off"}"></span>
+    ${detail && !p.self && p.online ? `<button class="btn sm" data-ping="${esc(p.ips[0])}">Ping</button>` : ""}
+    ${detail && !p.self && S && S.me && S.me.role === "owner" ? `<button class="btn sm danger" data-kick="${esc(p.id)}" data-kickname="${esc(p.name)}">踢出</button>` : ""}</div>
+    ${detail && !p.self && S && S.me && S.me.role === "owner" ? `<div class="row" style="border-top:0;padding-top:0;margin:-4px 0 4px 50px"><span class="small muted grow">回到家（連上家裡 Wi-Fi）時通知我</span>
+      <label class="switch"><input type="checkbox" data-arr="${esc(p.id)}" ${ARR[p.id] ? "checked" : ""}><span></span></label></div>` : ""}`;
+  if (ts.ok) {
+    const list = [ts.self, ...ts.peers];
+    $("#homeDevices").innerHTML = list.map(p => devRow(p, false)).join("");
+    $("#tsSum").textContent = ts.tailnet || "";
+    $("#devList").innerHTML = list.map(p => devRow(p, true)).join("") + `<pre class="out" id="pingOut" hidden></pre>`;
+    const me = ts.self;
+    $("#selfInfo").innerHTML = kv([
+      ["Tailscale IP", me.ips.join("<br>")], ["MagicDNS 名稱", esc(me.dns)],
+      ["當出口節點 (exit node)", me.offers_exit ? PILLOK + '已開放</span>' : '<span class="pill bad">未開放</span>'],
+      ["HTTPS 憑證", ts.https ? PILLOK + '已啟用</span>' : '<span class="pill">未啟用</span>'],
+      ["對外 IP", esc(sys.public_ip || "—")],
+    ]);
+    $("#webVnc").href = `https://${me.dns}:6443/vnc.html?autoconnect=true&resize=scale&reconnect=true&show_dot=true&path=websockify`;
+  } else $("#homeDevices").innerHTML = $("#devList").innerHTML = `<div class="empty">${esc(ts.error)}</div>`;
+
+  // kick settings
+  const k = d.kick || {};
+  $("#kickStatus").innerHTML = kv([
+    ["Tailscale API", k.has_api ? PILLOK + '已連結</span>' : '<span class="pill bad">未連結（踢不了人）</span>'],
+    ...(k.api_saved_at ? [["Token 到期", (() => { const left = Math.ceil((k.api_saved_at + 90 * 86400 - Date.now() / 1000) / 86400);
+      return left > 7 ? `約 ${left} 天後` : `<span class="pill bad">剩 ${Math.max(left, 0)} 天，記得換新的</span>`; })()]] : []),
+    ["踢人密碼", k.has_password ? PILLOK + '已設定</span>' : '<span class="pill bad">未設定</span>'],
+    ...(k.locked_until ? [["狀態", `<span class="pill bad">輸錯太多次，鎖到 ${new Date(k.locked_until * 1000).toLocaleTimeString("zh-TW")}</span>`]] : []),
+  ]);
+  if (!k.has_api && !$("#kickSetup").dataset.touched) $("#kickSetup").open = true;
+
+  // adguard
+  if (ag.ok) {
+    const until = ag.protection_disabled_until;
+    $("#protText").innerHTML = ag.protection ? icon("shield") + " 擋廣告保護中" : icon("pause") + " 已暫停";
+    $("#protSub").textContent = ag.protection ? `今天已擋 ${fmtN(ag.blocked)} 筆，共 ${fmtN(ag.queries)} 筆查詢` : (until ? `將在 ${new Date(until).toLocaleTimeString("zh-TW")} 自動恢復` : "手動關閉中");
+    $("#protSwitch").checked = !!ag.protection;
+    barList($("#topBlocked"), ag.top_blocked || [], "blocked");
+    barList($("#topQueried"), ag.top_queried || [], "queried");
+    const rules = (ag.user_rules || []).filter(r => r && !r.startsWith("!") && !r.startsWith("#"));
+    $("#rules").innerHTML = rules.length ? rules.map(r => { const allow = r.startsWith("@@"); const dom = r.replace(/^@@/, "").replace(/^\|\|/, "").replace(/\^$/, "");
+      return `<div class="row" data-d="${esc(dom)}"><span class="pill ${allow ? "good" : "bad"}">${allow ? "放行" : "封鎖"}</span><div class="grow dom">${esc(dom)}</div><button class="btn sm" data-rule="remove">移除</button></div>`; }).join("")
+      : `<div class="empty">還沒有自訂規則</div>`;
+    $("#filters").innerHTML = (ag.filters || []).map(f => `<div class="row"><div class="grow"><div class="t">${esc(f.name)}</div><div class="s">${fmtN(f.rules)} 條規則・更新於 ${ago(f.updated)}</div></div>
+      <label class="switch"><input type="checkbox" data-filter="${f.id}" ${f.enabled ? "checked" : ""}><span></span></label></div>`).join("");
+  }
+
+  // remote (music / volume come from /api/media, loaded only while the 遙控 tab is open)
+  $("#awakeSwitch").checked = !!sys.keep_awake;
+  $('[data-quick="awake"]').innerHTML = icon("coffee") + `<span>${sys.keep_awake ? "防止睡眠中" : "防止睡眠"}</span>`;
+  $('[data-quick="awake"]').classList.toggle("on", !!sys.keep_awake);
+
+  // services
+  if (sv.core) {
+    const coreRow = c => {
+      let status, btns = "";
+      if (c.up) status = `<span class="pill good">● 執行中</span>`;
+      else if (c.kind === "sharing") status = `<span class="pill">未開啟</span>`;
+      else status = `<span class="pill bad">● 停止</span>`;
+      if (c.link) btns += `<a class="btn sm" href="${esc(c.link)}" target="_blank" rel="noopener">開啟</a>`;
+      if (c.kind === "sharing" && !c.up) btns += `<button class="btn sm" data-help="${c.key}">怎麼開？</button>`;
+      if (c.key === "dns") btns += `<button class="btn sm" id="aghRestart">重啟</button>`;
+      return `<div class="row" style="flex-wrap:wrap"><div class="grow"><div class="t">${esc(c.name)}</div>
+        <div class="s">port ${c.port}${c.kind === "sharing" && c.up ? "・需要對應的 App 才能開" : ""}</div></div>${status}${btns}
+        ${c.help ? `<div class="small muted" data-helptext="${c.key}" hidden style="flex-basis:100%;padding-top:6px">${esc(c.help)}<br><button class="btn sm" data-opensharing style="margin-top:6px">在 Mac 上打開「共享」設定</button></div>` : ""}</div>`;
+    };
+    const otherRow = o => `<div class="row" style="flex-wrap:wrap"><div class="grow"><div class="t">port ${o.port}・${esc(o.proc)}</div>
+      <div class="s">${esc(o.cwd)}</div></div>
+      ${o.trashed ? `<span class="pill bad">專案在垃圾桶</span>` : ""}
+      ${o.local_only ? `<span class="pill">只限本機</span>` : `<a class="btn sm" href="${esc(o.link)}" target="_blank" rel="noopener">開啟</a>`}
+      <button class="btn sm danger" data-stop="${o.port}">停止</button>
+      ${o.local_only ? `<div class="small muted" style="flex-basis:100%;padding-top:4px">這個服務只聽 127.0.0.1，手機連不到。要讓手機用，啟動時改成 <code>--host 0.0.0.0</code>。</div>` : ""}</div>`;
+    const open = new Set($$("[data-helptext]:not([hidden])").map(e => e.dataset.helptext));
+    $("#svcList").innerHTML = sv.core.map(coreRow).join("") +
+      `<h2 style="margin:16px 0 4px">其他在跑的開發服務</h2>` +
+      (sv.others.length ? sv.others.map(otherRow).join("") : `<div class="empty">沒有</div>`);
+    open.forEach(k => { const e = $(`[data-helptext="${k}"]`); if (e) e.hidden = false; });
+  }
+  $("#sysInfo").innerHTML = kv([["電腦名稱", esc(sys.hostname)], ["型號", esc(sys.model) + "・" + esc(sys.chip)], ["macOS", esc(sys.os)], ["CPU 核心", sys.ncpu],
+    ["開機時間", fmtDur(sys.uptime_s || 0)], ["插電時自動睡眠", sys.sleep_setting === 0 ? '<span class="pill good">永不</span>' : `${sys.sleep_setting} 分鐘`], ["對外 IP", esc(sys.public_ip || "—")]]);
+
+
+  // events
+  $("#events").innerHTML = (d.events || []).slice(0, 8).map(e => `<div class="row"><div class="grow"><div class="t" style="font-weight:450;white-space:normal">${esc(e.text)}</div><div class="s">${esc(e.who)}・${ago(e.t)}</div></div></div>`).join("") || `<div class="empty">還沒有動態</div>`;
+}
+const TILE_STYLE = { "雲端硬碟": ["cloud", "teal"], "擋廣告": ["shield", "green"], "CPU": ["cpu", "blue"], "記憶體": ["memory", "purple"], "硬碟": ["disk", "orange"], "電池": ["battery", "mint"], "裝置在線": ["wifi", "indigo"] };
+const HIST = { cpu: [], mem: [] };  // last ~5 minutes at the 5 s refresh
+var sparkN = 0;
+function spark(vals) {
+  if (vals.length < 2) return "";
+  // scale to the recent range (at least 10 points tall) so small changes are visible
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi - lo < 10) { const mid = (hi + lo) / 2; lo = mid - 5; hi = mid + 5; }
+  const W = 120, H = 26, n = vals.length, x = i => (i / (n - 1) * W).toFixed(1), y = v => (H - 3 - (v - lo) / (hi - lo) * (H - 6)).toFixed(1);
+  const line = vals.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(""), gid = "sg" + (++sparkN);
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>
+    <path d="${line}L${W},${H}L0,${H}Z" fill="url(#${gid})"/><path class="l" d="${line}"/></svg>`;
+}
+function tile(label, value, sub, pct, hist) {
+  const [ic, c] = TILE_STYLE[label] || ["activity", "blue"];
+  const p = pct == null ? null : Math.max(0, Math.min(100, pct)), R = 40, L = 2 * Math.PI * R;
+  return `<div class="card tile ring" style="--c:${C[c]}">
+    <div class="ringbox"><svg viewBox="0 0 96 96"><circle class="trk" cx="48" cy="48" r="${R}"/>${p != null && p >= 0.5 ? `<circle class="val" cx="48" cy="48" r="${R}" stroke-dasharray="${(p / 100 * L).toFixed(1)} ${L.toFixed(1)}"/>` : ""}</svg>
+      <div class="rv ${String(value).length > 6 ? "small" : ""}">${value}</div></div>
+    <div class="rl">${badge(ic, c)}${label}</div><div class="sub">${sub || ""}</div>${hist ? spark(hist) : ""}</div>`;
+}
+function renderHero(d) {
+  const h = new Date().getHours();
+  const hi = (h < 5 ? "夜深了" : h < 11 ? "早安" : h < 14 ? "午安" : h < 18 ? "下午好" : "晚安") + "，";
+  const nm = (d.me && (d.me.name || d.me.login)) || "";
+  const pic = d.me && d.me.pic ? `<img class="avatar" src="${esc(d.me.pic)}" alt="">` : `<span class="avatar badge" style="--c:#5e5ce6;width:56px;height:56px;border-radius:50%;font-size:26px">${icon("user")}</span>`;
+  if (!$("#hero .who")) $("#hero").insertAdjacentHTML("afterbegin", `<div class="who"><span id="heroPic"></span><div><div class="hi" id="heroHi2"></div><div class="name" id="heroName2"></div></div></div>`);
+  $("#heroPic").innerHTML = pic; $("#heroHi2").textContent = hi; $("#heroName2").textContent = nm;
+  $("#heroHi").hidden = true; $("#heroName").hidden = true;
+  const ts = d.tailscale || {}, ag = d.adguard || {}, sys = d.system || {};
+  const chips = [];
+  if (d.system) chips.push([sys.on_ac ? "zap" : "battery", "green", sys.on_ac ? "Mac 在線・插電中" : `Mac 在線・電池 ${sys.battery}%`]);
+  if (ts.ok) chips.push(["wifi", "indigo", `VPN ${(ts.peers || []).filter(p => p.online).length + 1} 台在線`]);
+  if (ag.ok) chips.push(["shield", ag.protection ? "green" : "orange", ag.protection ? `擋廣告保護中・已擋 ${fmtN(ag.blocked)}` : "擋廣告已暫停"]);
+  $("#heroChips").innerHTML = chips.map(([i, c, t]) => `<span class="stat-chip" style="--c:${C[c]}">${icon(i)}${esc(t)}</span>`).join("");
+}
+function kv(rows) { return rows.map(([k, v]) => `<div class="row"><div class="grow s" style="font-size:13px">${k}</div><div style="text-align:right">${v ?? "—"}</div></div>`).join(""); }
+
+var busy = false;
+async function refresh(force) {
+  if (busy || (document.hidden && !force)) return; busy = true;
+  try { render(await api("/api/overview")); }
+  catch (e) { $("#liveDot").className = "dot off"; if (!S) $("#tiles").innerHTML = `<div class="card empty">連不上控制台：${esc(e.message)}</div>`; }
+  finally { busy = false; }
+}
+lockStatus().then(st => { if (!st.unlocked) showLock(st.has_pin ? "unlock" : "setup"); else refresh(true); }).catch(() => refresh(true));
+// poll gently: every 5 s when the app is in front, every 30 s when its window is not focused, never when hidden
+var lastPoll = 0;
+setInterval(() => {
+  if (!$("#lock").hidden || document.hidden) return;
+  const every = document.hasFocus() ? 5000 : 30000;
+  if (Date.now() - lastPoll < every - 200) return;
+  lastPoll = Date.now(); refresh();
+  if ($('section[data-tab="remote"]').classList.contains("show")) loadMedia();
+}, 1000);
+async function loadMedia() { try { renderMedia(await api("/api/media")); } catch {} }
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+
+// ---------- handlers ----------
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button, [data-filter]"); if (!t) return;
+  if (t.dataset.quick === "pause10") act("agh_protection", { enabled: false, minutes: 10 }, "擋廣告暫停 10 分鐘");
+  if (t.dataset.quick === "awake") act("keep_awake", { on: !(S && S.system && S.system.keep_awake) }, "已切換防止睡眠");
+  if (t.dataset.quick === "screen") act("display_sleep", {}, "已關閉 Mac 螢幕");
+  if (t.dataset.quick === "shot" || t.id === "shotBtn") {
+    const img = t.id === "shotBtn" ? $("#shot") : $("#quickShot"); t.disabled = true; toast("擷取中…");
+    try { const d = await act("screenshot"); img.src = d.image; img.hidden = false; } catch {} t.disabled = false; }
+  if (t.dataset.pause) act("agh_protection", { enabled: false, minutes: +t.dataset.pause }, `暫停 ${t.dataset.pause} 分鐘`);
+  if (t.dataset.ping) { const o = $("#pingOut"); o.hidden = false; o.textContent = "Ping 中…";
+    try { const d = await act("ts_ping", { target: t.dataset.ping }); o.textContent = d.output; } catch (err) { o.textContent = err.message; } }
+  if (t.dataset.media) act("media", { cmd: t.dataset.media });
+  if (t.dataset.help) { const e = $(`[data-helptext="${t.dataset.help}"]`); e.hidden = !e.hidden; }
+  if (t.dataset.opensharing !== undefined) act("open_sharing", {}, "已在 Mac 上打開共享設定");
+  if (t.dataset.stop) { if (t.dataset.confirm !== "1") { t.dataset.confirm = "1"; t.textContent = "確定停止？"; setTimeout(() => { t.dataset.confirm = ""; t.textContent = "停止"; }, 3000); }
+    else act("stop_service", { port: +t.dataset.stop }, "已停止 port " + t.dataset.stop); }
+  if (t.id === "aghRestart") act("agh_restart", {}, "AdGuard 重新啟動中");
+});
+$("#protSwitch").onchange = e => act("agh_protection", { enabled: e.target.checked }, e.target.checked ? "擋廣告已開啟" : "擋廣告已關閉");
+$("#filters").onchange = e => { const f = e.target.dataset.filter; if (f) act("agh_filter_toggle", { id: +f, enabled: e.target.checked }, "已更新過濾清單"); };
+$("#cacheBtn").onclick = () => act("agh_cache_clear", {}, "DNS 快取已清除");
+$("#refreshBtn").onclick = async e => { e.target.disabled = true; toast("更新中，約需 10–30 秒…"); try { await act("agh_refresh", {}, "過濾清單已更新"); } catch {} e.target.disabled = false; };
+const ruleDom = () => $("#ruleDomain").value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+$("#ruleBlock").onclick = () => { const d = ruleDom(); if (d) act("agh_rule", { domain: d, kind: "block" }, "已封鎖 " + d).then(() => $("#ruleDomain").value = ""); };
+$("#ruleAllow").onclick = () => { const d = ruleDom(); if (d) act("agh_rule", { domain: d, kind: "allow" }, "已放行 " + d).then(() => $("#ruleDomain").value = ""); };
+$("#netcheckBtn").onclick = async e => { e.target.disabled = true; $("#netcheck").textContent = "檢測中，約 5 秒…";
+  try { const d = await act("netcheck"); const max = Math.max(...d.latency.map(l => l.ms));
+    $("#netcheck").innerHTML = kv([["UDP", d.udp ? PILLOK + '通</span>' : '<span class="pill bad">不通（會變慢）</span>'], ["IPv4", esc(d.ipv4)], ["IPv6", esc(d.ipv6 || "—")], ["最近的中繼站", esc(d.nearest)]]) +
+      `<div class="bars" style="margin-top:8px">` + d.latency.map(l => `<div class="b"><span class="n">${esc(l.region)}</span><span class="v">${l.ms} ms</span><span class="track"><i style="width:${(l.ms / max * 100).toFixed(1)}%"></i></span></div>`).join("") + `</div>`;
+  } catch (err) { $("#netcheck").textContent = err.message; } e.target.disabled = false; };
+
+// kick
+var kickId = null;
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-kick]"); if (!b) return;
+  if (S && S.kick && !S.kick.has_api) { toast("請先在下方「踢裝置設定」連結 Tailscale API"); $("#kickSetup").open = true; $("#kickSetup").scrollIntoView({ behavior: "smooth" }); return; }
+  kickId = b.dataset.kick; $("#kickName").textContent = b.dataset.kickname; $("#kickPw").value = ""; $("#kickErr").textContent = "";
+  $("#kickModal").hidden = false; setTimeout(() => $("#kickPw").focus(), 50);
+});
+$("#kickCancel").onclick = () => { $("#kickModal").hidden = true; kickId = null; };
+$("#kickModal").onclick = e => { if (e.target.id === "kickModal") $("#kickCancel").onclick(); };
+$("#kickForm").onsubmit = async e => {
+  e.preventDefault(); const pw = $("#kickPw").value; if (!pw) { $("#kickErr").textContent = "請輸入密碼"; return; }
+  $("#kickGo").disabled = true; $("#kickErr").textContent = "";
+  try {
+    const d = await api("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: "kick_device", arg: { id: kickId, password: pw } }) });
+    if (d.ok === false) throw new Error(d.error);
+    $("#kickModal").hidden = true; toast("已踢出 " + $("#kickName").textContent); setTimeout(refresh, 800);
+  } catch (err) { $("#kickErr").textContent = err.message; $("#kickPw").value = ""; }
+  $("#kickGo").disabled = false; $("#kickPw").value = "";
+};
+$("#kickSetup").addEventListener("toggle", () => $("#kickSetup").dataset.touched = "1");
+$("#kcSave").onclick = async e => {
+  const arg = { client_id: $("#kcId").value.trim(), client_secret: $("#kcSecret").value.trim(), api_key: $("#kcKey").value.trim(), new_password: $("#kcNew").value, password: $("#kcCur").value };
+  if (!arg.password) { toast("請輸入目前的踢人密碼"); return; }
+  if (!arg.new_password && !arg.api_key && !(arg.client_id && arg.client_secret)) { toast("沒有要更新的東西"); return; }
+  e.target.disabled = true; toast("驗證中…");
+  try { await act("kick_setup", arg, "已儲存"); ["#kcId", "#kcSecret", "#kcKey", "#kcNew", "#kcCur"].forEach(s => $(s).value = ""); } catch {}
+  e.target.disabled = false;
+};
+
+// ---------- members ----------
+var M = null, memDirty = false, memOpen = null, SVCALL = null;
+const SVC_ICON = { dns: icon("shield"), remote: icon("monitor"), files: icon("folder"), panel: icon("sliders"), agh: icon("settings") };
+const CAP_ICON = { view: icon("eye"), log: icon("list"), adblock: icon("shield"), files: icon("folder"), remote: icon("gamepad"), screen: icon("camera") };
+const FILTER_ICON = { ads: icon("ban"), adult: icon("eyeoff"), safesearch: icon("search"), malware: icon("skull") };
+const POP_BLOCK = ["youtube","tiktok","instagram","facebook","twitter","discord","twitch","netflix","roblox","steam","epic_games","minecraft","leagueoflegends","snapchat","reddit","threads","chatgpt","shopee"];
+const blankPerson = login => ({ login, enabled: true, exit: true, services: ["dns"], ports: [], devices: [], expires: null,
+  schedule: { on: false, days: [0,1,2,3,4,5,6], start: "18:00", end: "23:00" },
+  filter: { on: false, ads: true, adult: false, safesearch: false, malware: true, blocked: [] }, caps: [],
+  sr: { on: !login.includes("@"), id: "" }, drive: { on: false, quota_gb: 5, shared: "ro", backup: true }, daily_min: 0 });
+async function loadMembers(keep) {
+  try {
+    const d = await api("/api/members");
+    if (keep && M) d.people = M.people.concat(d.people.filter(p => !M.people.some(q => q.login === p.login)));
+    M = d; if (!keep) memDirty = false;
+    if (!SVCALL) api("/api/blocked_services").then(x => { SVCALL = x.services; renderMembers(); }).catch(() => {});
+    renderMembers();
+  } catch (e) { $("#memList").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+const chip = (on, attrs, inner, cls = "") => `<button class="chipbtn ${cls} ${on ? "on" : ""}" ${attrs}>${inner}</button>`;
+function statusPill(p) {
+  if (p.new) return `<span class="pill">新加入・尚無權限</span>`;
+  if (memDirty) return `<span class="pill">未儲存</span>`;
+  return p.active ? `<span class="pill good">● ${esc(p.status)}</span>` : `<span class="pill bad">● ${esc(p.status)}</span>`;
+}
+function personSummary(p) {
+  const d = M, out = [];
+  if (!p.enabled) return "已停用";
+  if (p.exit) out.push("上網");
+  p.services.forEach(k => { if (!(k === "panel" && p.caps.length)) out.push(d.services[k]); });  // "控制台 N 項" below already says it
+  if (p.ports.length) out.push("port " + p.ports.join("/"));
+  if (p.devices.length) out.push(p.devices.length + " 台裝置");
+  if (p.caps.length) out.push("控制台 " + p.caps.length + " 項");
+  if (p.filter.on) out.push("有上網限制");
+  if (p.expires) out.push("到 " + p.expires);
+  if (p.schedule.on) out.push("限時段");
+  if (p.daily_min) out.push(`每天 ${p.daily_min >= 60 ? p.daily_min / 60 + " 小時" : p.daily_min + " 分鐘"}`);
+  if (p.sr && p.sr.on && !(S && S.features && S.features.shadowrocket === false)) out.push("Shadowrocket");
+  if (p.drive && p.drive.on) out.push("雲端 " + (p.drive.quota_gb ? p.drive.quota_gb + " GB" : "不限") + (p.drive.backup === false ? "・不能自動備份" : ""));
+  return out.join("・") || "什麼都不能用";
+}
+function personBody(p, i) {
+  const d = M, ts = p.login.includes("@");
+  const ownerDevs = (d.devices || []).filter(x => x.user === d.owner && !x.ips.includes(d.mac_ip));
+  const devsOf = login => (d.devices || []).filter(x => x.user === login);
+  const svcIcon = id => { const x = (SVCALL || []).find(s => s.id === id); return x && x.icon ? atobSafe(x.icon) : ""; };
+  const svcName = id => { const x = (SVCALL || []).find(s => s.id === id); return x ? x.name : id; };
+  const dv = p.drive || { on: false, quota_gb: 5, shared: "ro" };
+  return `
+    <div data-g="basic">
+      <div class="sect"><div class="st">${icon("sliders")} 快速設定</div>
+        <div class="chipbtns"><button class="chipbtn" data-preset="none" data-mem="${i}">全部關</button><button class="chipbtn" data-preset="net" data-mem="${i}">只能上網</button>
+        <button class="chipbtn" data-preset="family" data-mem="${i}">家人</button><button class="chipbtn" data-preset="kid" data-mem="${i}">小孩</button></div>
+        <div class="small muted" style="margin-top:6px">裝置：${devsOf(p.login).map(x => osIcon(x.os) + " " + esc(x.name)).join("、") || (ts ? "還沒有裝置登入" : "只用 Shadowrocket")}</div></div>
+      <div class="sect"><div class="st">${icon("power")} 帳號</div>
+        <div class="chipbtns">${chip(p.enabled, `data-mem="${i}" data-f="enabled"`, p.enabled ? icon("tick") + "啟用中" : icon("x") + "已停用")}</div></div>
+      <div class="sect"><div class="st">${icon("calendar")} 有效期限</div>
+        <div class="chipbtns">${chip(!p.expires, `data-mem="${i}" data-exp="0"`, "永久")}${[1, 7, 30].map(n => chip(false, `data-mem="${i}" data-exp="${n}"`, n + " 天")).join("")}</div>
+        <div class="timein"><span class="small muted">到期日</span><input type="date" data-mem="${i}" data-f="expires" value="${p.expires || ""}"></div></div>
+      <div class="sect"><div class="st">${icon("alarm")} 允許時段<span class="sp"></span>${chip(p.schedule.on, `data-mem="${i}" data-f="schedule.on"`, p.schedule.on ? "限時段" : "不限")}</div>
+        ${p.schedule.on ? `<div class="chipbtns">${[...WEEKDAYS].map((w, k) => chip(p.schedule.days.includes(k), `data-mem="${i}" data-day="${k}"`, w)).join("")}</div>
+        <div class="timein"><input type="time" data-mem="${i}" data-f="schedule.start" value="${p.schedule.start}"><span>到</span><input type="time" data-mem="${i}" data-f="schedule.end" value="${p.schedule.end}">
+        <span class="small muted">${p.schedule.start > p.schedule.end ? "跨夜" : ""}</span></div>` : `<div class="small muted">任何時間都能用</div>`}</div>
+      <div class="sect"><div class="st">${icon("globe")} 客戶端網址</div>
+        ${p.portal_url ? `<div class="btns"><button class="btn sm" data-plink="${i}">${icon("clipboard")}複製</button><button class="btn sm" data-pqr="${i}">${icon("qr")}QR</button><a class="btn sm" href="${esc(p.portal_url)}" target="_blank" rel="noopener">${icon("globe")}預覽</a><button class="btn sm danger" data-prot="${i}">${icon("refresh")}換網址</button></div>
+        <div class="small muted" style="margin-top:6px">他的專屬頁面：看自己的狀態、Shadowrocket、雲端。只能私下傳給本人。</div>` : `<div class="small muted">儲存後會產生</div>`}</div>
+      <div class="sect" style="text-align:center"><button class="btn sm danger" data-memdel="${i}">${icon("trash")}從名單移除</button></div>
+    </div>
+
+    <div data-g="conn">
+      <div class="sect feat-sr"><div class="st">${icon("rocket")} Shadowrocket<span class="sp"></span>${ts ? chip(p.sr && p.sr.on, `data-mem="${i}" data-f="sr.on"`, p.sr && p.sr.on ? "開啟" : "關閉") : `<span class="pill good">只用 Shadowrocket</span>`}</div>
+        <div class="small muted">${p.sr && p.sr.on ? "儲存後到「Shadowrocket」分頁拿他的 QR code" : "打開後，他可以用 Shadowrocket 走你家的網路"}</div></div>
+      <div class="sect tsonly"><div class="st">${icon("globe")} Tailscale 上網</div>
+        <div class="chipbtns">${chip(p.exit, `data-mem="${i}" data-f="exit"`, icon("globe") + "用 Mac 當出口上網")}</div></div>
+      <div class="sect tsonly"><div class="st">${icon("laptop")} 這台 Mac 的服務</div>
+        <div class="chipbtns">${Object.entries(d.services).map(([k, l]) => chip(p.services.includes(k), `data-mem="${i}" data-svc2="${k}"`, SVC_ICON[k] + " " + esc(l))).join("")}</div>
+        <div class="chipbtns" style="margin-top:6px">${p.ports.map(n => chip(true, `data-mem="${i}" data-delport="${n}"`, "port " + n + " " + icon("x"))).join("")}</div>
+        <div class="timein"><input type="number" min="1" max="65535" placeholder="其他 port" data-mem="${i}" data-portin style="width:130px"><button class="btn sm" data-mem="${i}" data-addport>加入</button></div></div>
+      <div class="sect tsonly"><div class="st">${icon("phone")} 你的其他裝置</div>
+        <div class="chipbtns">${ownerDevs.map(x => chip(p.devices.includes(x.id), `data-mem="${i}" data-dev="${esc(x.id)}"`, osIcon(x.os) + " " + esc(x.name))).join("") || `<span class="small muted">沒有其他裝置</span>`}</div></div>
+    </div>
+
+    <div data-g="cloud">
+      <div class="sect"><div class="st">${icon("cloud")} 雲端硬碟<span class="sp"></span>${chip(dv.on, `data-mem="${i}" data-f="drive.on"`, dv.on ? "開啟" : "關閉")}</div>
+        <div class="small muted">${dv.on ? "他會有自己的「我的檔案」資料夾，用客戶端網址存取" : "打開後他可以用你的外接硬碟存檔案"}</div></div>
+      ${dv.on ? `<div class="sect"><div class="st">${icon("disk")} 容量上限</div>
+        <div class="chipbtns">${[1, 5, 10, 50, 100, 0].map(g => chip(dv.quota_gb === g, `data-mem="${i}" data-quota="${g}"`, g ? g + " GB" : "不限")).join("")}</div></div>
+      <div class="sect"><div class="st">${icon("users")} 共用資料夾</div>
+        <div class="chipbtns">${[["none", "看不到"], ["ro", "只能看"], ["rw", "可以上傳修改"]].map(([k, l]) => chip(dv.shared === k, `data-mem="${i}" data-shared="${k}"`, l)).join("")}</div></div>
+      <div class="sect"><div class="st">${icon("camera")} iPhone 照片自動備份<span class="sp"></span>${chip(dv.backup !== false, `data-mem="${i}" data-f="drive.backup"`, dv.backup !== false ? "允許" : "不允許")}</div>
+        <div class="small muted">${dv.backup !== false ? "他可以用 iPhone「捷徑」每天自動把照片存到雲端的「相機備份」資料夾" : "他的網頁上不會出現自動備份，捷徑上傳也會被擋下；在網頁上手動上傳不受影響"}</div></div>` : ""}
+    </div>
+
+    <div data-g="limit">
+      <div class="sect"><div class="st">${icon("clock")} 每天可以用多久</div>
+        <div class="chipbtns">${[[0, "不限"], [30, "30 分"], [60, "1 小時"], [120, "2 小時"], [180, "3 小時"], [300, "5 小時"]].map(([v, l]) => chip((p.daily_min || 0) === v, `data-mem="${i}" data-dmin="${v}"`, l)).join("")}</div>
+        <div class="small muted" style="margin-top:6px">有在用網路才算時間（Shadowrocket 和 Tailscale 合計），用完當天自動斷線，半夜 12 點恢復。</div></div>
+      <div class="sect"><div class="st">${icon("shield")} 上網限制<span class="sp"></span>${chip(p.filter.on, `data-mem="${i}" data-f="filter.on"`, p.filter.on ? "開啟" : "關閉")}</div>
+        ${p.filter.on ? `<div class="chipbtns">${Object.entries(d.filters).map(([k, l]) => chip(p.filter[k], `data-mem="${i}" data-f="filter.${k}"`, FILTER_ICON[k] + " " + esc(l))).join("")}</div>
+        <div class="small muted" style="margin:10px 0 6px">封鎖這些 App / 網站</div>
+        <div class="chipbtns">${[...new Set([...POP_BLOCK, ...p.filter.blocked])].map(id => chip(p.filter.blocked.includes(id), `data-mem="${i}" data-blk="${esc(id)}"`, svcIcon(id) + esc(svcName(id)), "block")).join("")}</div>`
+        : `<div class="small muted">跟全家共用擋廣告設定</div>`}</div>
+    </div>
+
+    <div data-g="report"><div id="repBox">${REP[p.login] ? reportHtml(REP[p.login]) : '<div class="skel"><i></i><i></i><i></i></div>'}</div></div>
+
+    <div data-g="panel">
+      <div class="sect tsonly"><div class="st">${icon("sliders")} 控制台可以做什麼</div>
+        <div class="chipbtns">${Object.entries(d.caps).map(([k, l]) => chip(p.caps.includes(k), `data-mem="${i}" data-cap="${k}"`, CAP_ICON[k] + " " + esc(l))).join("")}</div>
+        <div class="small muted" style="margin-top:6px">踢人、成員、雲端管理、服務永遠只有你能用。</div></div>
+      <div class="sect tsonly"><div class="st">${icon("lock")} 控制台密碼</div>
+        <button class="btn sm" data-lockreset="${i}">${icon("refresh")}重設他的密碼 / Face ID</button></div>
+    </div>`;
+}
+function renderMembers() {
+  const d = M; $("#memOwner").textContent = d.owner;
+  let b = "";
+  if (d.api === "none") b = `<div class="banner bad">還沒連結 Tailscale API（設定 → 安全 → 踢裝置設定）</div>`;
+  else if (d.api === "no_policy_scope") b = `<div class="banner bad">OAuth 金鑰沒有「Policy file」權限，無法改規則。</div>`;
+  else if (d.api === "error") b = `<div class="banner bad">讀取規則失敗：${esc(d.api_error)}</div>`;
+  else if (d.mode === "allow_all") b = `<div class="banner bad">${icon("alert")} Tailscale 目前是「全部允許」，按「儲存並套用」換成這裡的設定。</div>`;
+  else if (d.mode === "custom") b = `<div class="banner">目前是手動規則，儲存後改由控制台管理。</div>`;
+  if (d.last_error) b += `<div class="banner bad">${icon("alert")} 自動套用失敗：${esc(d.last_error)}</div>`;
+  if (memDirty) b += `<div class="banner">${icon("alert")} 有變更還沒儲存</div>`;
+  $("#memBanner").innerHTML = b;
+  $("#memList").innerHTML = d.people.map((p, i) => `<button class="mrow" data-memopen="${i}">
+    ${badge(p.login.includes("@") ? "user" : "rocket", p.active === false ? "gray" : p.login.includes("@") ? "purple" : "indigo", "devbadge")}
+    <span class="grow"><span class="t"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.login)}</span>${statusPill(p)}</span><span class="s" style="display:block">${esc(personSummary(p))}</span></span>
+    <span class="chev">›</span></button>`).join("");
+  const yes = (who, what) => `<div class="row"><span>${who}</span><div class="grow">${what}</div></div>`;
+  $("#memSummary").innerHTML = yes(badge("crown", "yellow", "devbadge"), `<b>${esc(d.owner)}</b>（你）<div class="small muted">全部都可以</div>`) +
+    d.people.map(p => yes(badge("user", p.active === false ? "gray" : "purple", "devbadge"), `<b>${esc(p.login)}</b> ${statusPill(p)}<div class="small muted">${esc(personSummary(p))}</div>`)).join("");
+  $("#memSave").disabled = d.api !== "ok";
+  renderSheet();
+}
+function renderSheet() {
+  const i = M ? M.people.findIndex(p => p.login === memOpen) : -1;
+  if (i < 0) { $("#memSheet").hidden = true; return; }
+  const p = M.people[i], ts = p.login.includes("@"), body = $("#sheetBody"), top = body.scrollTop;
+  $("#sheetTitle").textContent = p.login;
+  $("#sheetBadge").innerHTML = badge(ts ? "user" : "rocket", ts ? "purple" : "indigo", "devbadge");
+  body.classList.toggle("sronly", !ts);
+  $('#sheetSeg [data-sg="panel"]').hidden = !ts;
+  if (!ts && body.dataset.show === "panel") body.dataset.show = "basic";
+  $$("#sheetSeg button").forEach(b => b.classList.toggle("on", b.dataset.sg === body.dataset.show));
+  body.innerHTML = personBody(p, i);
+  body.scrollTop = top;
+  $("#memSheet").hidden = false;
+}
+$("#sheetSeg").onclick = e => { const b = e.target.closest("[data-sg]"); if (!b) return; $("#sheetBody").dataset.show = b.dataset.sg; $("#sheetBody").scrollTop = 0; renderSheet();
+  if (b.dataset.sg === "report" && memOpen) loadReport(memOpen); };
+// ---------- member report ----------
+var REP = {};
+async function loadReport(login) {
+  try { REP[login] = await api("/api/member_report?" + new URLSearchParams({ login })); if (memOpen === login) { const box = $("#repBox"); if (box) box.innerHTML = reportHtml(REP[login]); } }
+  catch (e) { const box = $("#repBox"); if (box) box.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function reportHtml(r) {
+  const tot = r.days.map(d => d.up + d.down), max = Math.max(1, ...tot), sum = tot.reduce((a, b) => a + b, 0);
+  const bars = r.days.map((d, i) => `<div class="rbar ${i === r.days.length - 1 ? "today" : ""}" title="${esc(d.day)}：下載 ${fmtB(d.down)}・上傳 ${fmtB(d.up)}">
+    <i style="height:${(tot[i] / max * 100).toFixed(1)}%"></i>${i % 3 === 1 || i === r.days.length - 1 ? `<b>${d.day.slice(5).replace("-", "/")}</b>` : ""}</div>`).join("");
+  return `<div class="sect"><div class="st">${icon("chart")} 最近 14 天的流量<span class="sp"></span><span class="small muted">合計 ${fmtB(sum)}</span></div>
+      <div class="rep-chart" role="img" aria-label="最近 14 天每天的流量">${bars}</div>
+      <div class="legend"><span><i style="background:var(--series-1)"></i>每天</span><span><i style="background:var(--series-2)"></i>今天</span></div>
+      <details><summary>表格檢視</summary><table class="tbl"><tr><th>日期</th><th class="r">下載</th><th class="r">上傳</th></tr>${r.days.slice().reverse().map(d => `<tr><td>${esc(d.day)}</td><td class="r">${fmtB(d.down)}</td><td class="r">${fmtB(d.up)}</td></tr>`).join("")}</table></details></div>
+    <div class="sect"><div class="st">${icon("clock")} 今天用了</div>
+      <div class="mini-grid"><div class="mini"><div class="k">今天使用時間</div><div class="v">${r.minutes_today} 分鐘</div></div>
+      <div class="mini"><div class="k">每日上限</div><div class="v">${r.daily_min ? r.daily_min + " 分鐘" : "不限"}</div></div></div></div>
+    <div class="sect"><div class="st">${icon("globe")} 最常去的網站</div>
+      ${r.top.length ? `<div class="bars">${r.top.map(t => `<div class="b"><span class="n">${esc(t.domain)}</span><span class="v">${fmtN(t.count)} 次</span><span class="track"><i style="width:${(t.count / r.top[0].count * 100).toFixed(1)}%"></i></span></div>`).join("")}</div>`
+        : `<div class="small muted">${r.dns_note ? "只用 Shadowrocket 的人看不到網站紀錄（為了隱私沒有記錄）" : "還沒有紀錄"}</div>`}</div>`;
+}
+$("#sheetDone").onclick = () => { memOpen = null; $("#memSheet").hidden = true; };
+$("#memSheet").onclick = e => { if (e.target.id === "memSheet") $("#sheetDone").onclick(); };
+const WEEKDAYS = "一二三四五六日";
+function setPath(o, path, v) { const k = path.split("."); let x = o; while (k.length > 1) x = x[k.shift()]; x[k[0]] = v; }
+function getPath(o, path) { return path.split(".").reduce((x, k) => x[k], o); }
+function touch(p) { delete p.new; memDirty = true; renderMembers(); }
+const toggleIn = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
+$("#memList").onclick = e => { const r = e.target.closest("[data-memopen]"); if (!r) return; memOpen = M.people[+r.dataset.memopen].login; $("#sheetBody").dataset.show = "basic"; renderSheet(); };
+$("#sheetBody").onclick = async e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.lockreset !== undefined) { const q = M.people[+t.dataset.lockreset];
+    try { await lockPost("reset-member", { login: q.login }); toast("已重設 " + q.login + " 的控制台密碼", "ok"); } catch (err) { toast(err.message, "alert"); } return; }
+  const p = M.people[+t.dataset.mem]; if (!p) return;
+  p.drive = p.drive || { on: false, quota_gb: 5, shared: "ro" };
+  if (t.dataset.quota !== undefined) { p.drive.quota_gb = +t.dataset.quota; return touch(p); }
+  if (t.dataset.dmin !== undefined) { p.daily_min = +t.dataset.dmin; return touch(p); }
+  if (t.dataset.shared) { p.drive.shared = t.dataset.shared; return touch(p); }
+  if (t.dataset.f && t.tagName === "BUTTON") { setPath(p, t.dataset.f, !getPath(p, t.dataset.f)); return touch(p); }
+  if (t.dataset.exp !== undefined) { const n = +t.dataset.exp; p.expires = n ? new Date(Date.now() + (n - 1) * 864e5).toLocaleDateString("sv-SE") : null; return touch(p); }
+  if (t.dataset.day !== undefined) { p.schedule.days = toggleIn(p.schedule.days, +t.dataset.day).sort(); return touch(p); }
+  if (t.dataset.svc2) { p.services = toggleIn(p.services, t.dataset.svc2); if (t.dataset.svc2 === "panel" && !p.services.includes("panel")) p.caps = []; return touch(p); }
+  if (t.dataset.dev) { p.devices = toggleIn(p.devices, t.dataset.dev); return touch(p); }
+  if (t.dataset.blk) { p.filter.blocked = toggleIn(p.filter.blocked, t.dataset.blk); return touch(p); }
+  if (t.dataset.cap) { p.caps = toggleIn(p.caps, t.dataset.cap); if (p.caps.length && !p.services.includes("panel")) p.services.push("panel"); return touch(p); }
+  if (t.dataset.delport) { p.ports = p.ports.filter(n => n !== +t.dataset.delport); return touch(p); }
+  if (t.dataset.addport !== undefined) { const inp = t.parentElement.querySelector("[data-portin]"); const n = +inp.value;
+    if (!(n >= 1 && n <= 65535)) { toast("請輸入 1–65535"); return; } if (!p.ports.includes(n)) p.ports.push(n); return touch(p); }
+  if (t.dataset.preset) { const v = t.dataset.preset, base = blankPerson(p.login);
+    // presets change permissions only — keep identity-like fields (Shadowrocket key, portal token, cloud settings)
+    Object.assign(p, base, { enabled: true, expires: p.expires, schedule: p.schedule, devices: [], sr: p.sr || base.sr, drive: p.drive || base.drive, portal: p.portal });
+    if (v === "none") { p.exit = false; p.services = []; }
+    if (v === "family") { p.services = ["dns", "panel"]; p.caps = ["view", "remote"]; }
+    if (v === "kid") { p.services = ["dns"]; p.filter = { on: true, ads: true, adult: true, safesearch: true, malware: true, blocked: ["tiktok"] };
+      p.schedule = { on: true, days: [0,1,2,3,4,5,6], start: "07:00", end: "21:00" }; }
+    return touch(p); }
+  if (t.dataset.memdel !== undefined) {
+    if (t.dataset.confirm !== "1") { t.dataset.confirm = "1"; t.textContent = "確定移除？"; setTimeout(() => { if (t.isConnected) { t.dataset.confirm = ""; t.textContent = "從名單移除"; } }, 3000); return; }
+    M.people.splice(+t.dataset.memdel, 1); memOpen = null; memDirty = true; renderMembers(); toast("已移除（按儲存才會生效）"); }
+};
+$("#sheetBody").onchange = e => { const t = e.target; if (!t.dataset.f || t.tagName !== "INPUT") return;
+  const p = M.people[+t.dataset.mem]; setPath(p, t.dataset.f, t.value || (t.dataset.f === "expires" ? null : t.value)); touch(p); };
+$("#memAddBtn").onclick = () => { const v = $("#memAdd").value.trim();
+  if (!(/^[^\s@]+@[^\s@]+$/.test(v) || /^[^\s@<>"'&]{1,32}$/.test(v))) { toast("請輸入 Tailscale 帳號或一個名字（32 字以內）", "alert"); return; }
+  if (v === M.owner || M.people.some(p => p.login === v)) { toast("已經在名單裡"); return; }
+  M.people.push(blankPerson(v)); memOpen = v; $("#sheetBody").dataset.show = "basic"; $("#memAdd").value = ""; memDirty = true; renderMembers(); };
+$("#memReload").onclick = () => loadMembers();
+function askPassword(title, desc) {
+  return new Promise(resolve => {
+    $("#pwTitle").textContent = title; $("#pwDesc").textContent = desc; $("#pwInput").value = ""; $("#pwErr").textContent = "";
+    $("#pwModal").hidden = false; setTimeout(() => $("#pwInput").focus(), 50);
+    const done = v => { $("#pwModal").hidden = true; $("#pwForm").onsubmit = null; $("#pwCancel").onclick = null; resolve(v); };
+    $("#pwCancel").onclick = () => done(null);
+    $("#pwForm").onsubmit = e => { e.preventDefault(); const v = $("#pwInput").value; if (v) done(v); else $("#pwErr").textContent = "請輸入密碼"; };
+  });
+}
+$("#memSave").onclick = async () => {
+  const pw = await askPassword("套用成員權限", "會改寫 Tailscale 的存取規則。Tailscale 會先驗證，沒問題才套用。"); if (!pw) return;
+  $("#memSave").disabled = true; toast("套用中…");
+  try {
+    const d = await api("/api/action", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "members_save", arg: { password: pw, people: M.people.filter(p => !p.new || memDirty).map(({ active, status, new: _n, ...p }) => p) } }) });
+    if (d.ok === false) throw new Error(d.error);
+    toast(d.warning || "權限已套用", d.warning ? "alert" : "ok"); memDirty = false; loadMembers(); loadProxy();
+  } catch (e) { toast(e.message, "alert"); $("#memSave").disabled = false; }
+};
+
+// ---------- app lock (PIN + Face ID passkey) ----------
+const L = { mode: null, pin: "", first: "", status: null };
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+const canPasskey = () => !!(window.PublicKeyCredential && navigator.credentials);
+async function lockStatus() { L.status = await api("/api/lock/status"); return L.status; }
+function lockPaint() {
+  const T = { unlock: ["輸入密碼", "解鎖家用控制台"], setup: ["設定 4 位數密碼", "之後進入控制台都要輸入"], confirm: ["再輸入一次", "確認你的新密碼"],
+    change: ["輸入新密碼", "更改控制台密碼"], forgot: ["忘記密碼", ""] }[L.mode] || ["", ""];
+  $("#lockTitle").textContent = T[0]; $("#lockSub").textContent = T[1];
+  $$("#lockDots i").forEach((d, i) => d.classList.toggle("f", i < L.pin.length));
+  const st = L.status || {};
+  $("#keyFace").disabled = !(L.mode === "unlock" && st.passkeys && canPasskey());
+  $("#lockForgot").hidden = L.mode !== "unlock";
+  $("#lockCancel").hidden = L.mode !== "change";
+  $("#keypad").hidden = L.mode === "forgot";
+  $("#lockDots").hidden = L.mode === "forgot";
+}
+async function showLock(mode) {
+  if (!$("#lock").hidden && L.mode === mode) return;
+  try { await lockStatus(); } catch {}
+  L.mode = mode || (L.status && !L.status.has_pin ? "setup" : "unlock"); L.pin = ""; L.first = "";
+  $("#lockErr").textContent = ""; $("#lockExtra").hidden = true; $("#lock").hidden = false; lockPaint();
+}
+function hideLock() { $("#lock").hidden = true; L.mode = null; refresh(true); const cur = document.querySelector("section[data-tab].show"); if (cur) show(cur.dataset.tab); }
+function lockShake(msg) { $("#lockErr").textContent = msg || ""; $("#lockDots").classList.remove("shake"); void $("#lockDots").offsetWidth; $("#lockDots").classList.add("shake"); L.pin = ""; setTimeout(lockPaint, 350); }
+async function lockPost(op, body) {
+  const r = await fetch("/api/lock/" + op, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+  const d = await r.json().catch(() => ({ ok: false, error: "HTTP " + r.status }));
+  if (!r.ok || d.ok === false) throw new Error(d.error || "失敗");
+  return d;
+}
+async function lockDigits() {
+  if (L.pin.length < 4) return;
+  const pin = L.pin;
+  if (L.mode === "setup" || L.mode === "change") { L.first = pin; L.pin = ""; L.mode = "confirm"; L.after = L.after || "setup"; lockPaint(); return; }
+  if (L.mode === "confirm") {
+    if (pin !== L.first) { L.mode = L.after === "change" ? "change" : "setup"; return lockShake("兩次輸入不一樣，請重新設定"); }
+    try { await lockPost("set-pin", { pin }); toast("密碼已設定", "ok"); await lockStatus(); offerFaceId(); }
+    catch (e) { lockShake(e.message); }
+    return;
+  }
+  try { await lockPost("pin", { pin }); hideLock(); }
+  catch (e) { lockShake(e.message); }
+}
+function offerFaceId() {
+  if (!canPasskey() || (L.status && L.status.passkeys)) return hideLock();
+  $("#keypad").hidden = true; $("#lockDots").hidden = true; $("#lockForgot").hidden = true;
+  $("#lockTitle").textContent = "要用 Face ID 解鎖嗎？"; $("#lockSub").textContent = "之後可以直接用 Face ID，不用輸入密碼";
+  $("#lockExtra").innerHTML = `<div class="btns" style="justify-content:center"><button class="btn primary" id="fidYes">${icon("faceid")}啟用 Face ID</button><button class="btn" id="fidNo">之後再說</button></div>`;
+  $("#lockExtra").hidden = false;
+  $("#fidYes").onclick = async () => { await registerPasskey(); hideLock(); };
+  $("#fidNo").onclick = hideLock;
+}
+async function registerPasskey() {
+  try {
+    const { options: o } = await api("/api/lock/reg-options");
+    const cred = await navigator.credentials.create({ publicKey: { ...o, challenge: unb64u(o.challenge), user: { ...o.user, id: unb64u(o.user.id) },
+      excludeCredentials: (o.excludeCredentials || []).map(c => ({ ...c, id: unb64u(c.id) })) } });
+    const dev = /iPhone/.test(navigator.userAgent) ? "iPhone" : /iPad/.test(navigator.userAgent) ? "iPad" : /Mac/.test(navigator.userAgent) ? "Mac" : "裝置";
+    await lockPost("passkey-register", { clientDataJSON: b64u(cred.response.clientDataJSON), attestationObject: b64u(cred.response.attestationObject), device: dev });
+    toast("已啟用 Face ID", "ok"); await lockStatus(); renderSecurity();
+  } catch (e) { toast(e.name === "NotAllowedError" ? "已取消" : e.message, "alert"); }
+}
+async function unlockPasskey() {
+  try {
+    const { options: o } = await api("/api/lock/auth-options");
+    const cred = await navigator.credentials.get({ publicKey: { ...o, challenge: unb64u(o.challenge), allowCredentials: o.allowCredentials.map(c => ({ ...c, id: unb64u(c.id) })) } });
+    await lockPost("passkey", { id: cred.id, clientDataJSON: b64u(cred.response.clientDataJSON), authenticatorData: b64u(cred.response.authenticatorData), signature: b64u(cred.response.signature) });
+    hideLock();
+  } catch (e) { $("#lockErr").textContent = e.name === "NotAllowedError" ? "" : e.message; }
+}
+$("#keypad").addEventListener("click", e => {
+  const k = e.target.closest("[data-k]");
+  if (k && L.pin.length < 4) { L.pin += k.dataset.k; $("#lockErr").textContent = ""; lockPaint(); if (L.pin.length === 4) setTimeout(lockDigits, 120); }
+});
+$("#keyDel").onclick = () => { L.pin = L.pin.slice(0, -1); lockPaint(); };
+$("#keyFace").onclick = unlockPasskey;
+$("#lockCancel").onclick = () => { $("#lock").hidden = true; L.mode = null; };
+document.addEventListener("keydown", e => { if ($("#lock").hidden || $("#keypad").hidden) return;
+  if (/^\d$/.test(e.key)) $(`[data-k="${e.key}"]`).click(); else if (e.key === "Backspace") $("#keyDel").click(); });
+$("#lockForgot").onclick = () => {
+  L.mode = "forgot"; lockPaint();
+  const owner = L.status && L.status.owner;
+  $("#lockSub").textContent = owner ? "輸入踢人密碼來重設控制台密碼" : "請聯絡管理員幫你重設";
+  $("#lockExtra").innerHTML = owner ? `<input type="password" id="forgotPw" placeholder="踢人密碼" autocomplete="off"><div class="btns" style="justify-content:center;margin-top:10px"><button class="btn primary" id="forgotGo">重設</button><button class="btn" id="forgotBack">返回</button></div>`
+    : `<div class="btns" style="justify-content:center"><button class="btn" id="forgotBack">返回</button></div>`;
+  $("#lockExtra").hidden = false;
+  $("#forgotBack").onclick = () => showLock("unlock");
+  if (owner) $("#forgotGo").onclick = async () => { try { await lockPost("reset-self", { password: $("#forgotPw").value }); toast("已重設，請設定新密碼", "ok"); showLock("setup"); } catch (e) { $("#lockErr").textContent = e.message; } };
+};
+function renderSecurity() {
+  const st = L.status; if (!st) return;
+  $("#lockInfo").innerHTML = kv([["4 位數密碼", st.has_pin ? PILLOK + '已設定</span>' : '<span class="pill bad">未設定</span>'],
+    ["Face ID", st.passkeys ? PILLOK + `已啟用（${st.passkeys}）</span>` : '<span class="pill">未啟用</span>']]) +
+    `<div class="small muted" style="margin:12px 0 6px">離開多久自動上鎖</div><div class="chipbtns">${st.idle_choices.map(m => `<button class="chipbtn ${st.idle_min === m ? "on" : ""}" data-idle="${m}">${m < 60 ? m + " 分鐘" : "1 小時"}</button>`).join("")}</div>
+    <div class="btns" style="margin-top:14px"><button class="btn" id="secChange">${icon("key")}更改密碼</button>
+    ${canPasskey() ? (st.passkeys ? `<button class="btn danger" id="secFidOff">${icon("faceid")}移除 Face ID</button>` : `<button class="btn" id="secFidOn">${icon("faceid")}啟用 Face ID</button>`) : ""}
+    <button class="btn" id="secLock">${icon("lock")}立即上鎖</button></div>`;
+}
+$("#lockInfo").addEventListener("click", async e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.idle) { try { await lockPost("idle", { minutes: +t.dataset.idle }); await lockStatus(); renderSecurity(); toast("已更新", "ok"); } catch (err) { toast(err.message, "alert"); } }
+  if (t.id === "secChange") { L.mode = "change"; L.after = "change"; L.pin = ""; $("#lockErr").textContent = ""; $("#lockExtra").hidden = true; $("#lock").hidden = false; lockPaint(); }
+  if (t.id === "secFidOn") registerPasskey();
+  if (t.id === "secFidOff") { try { await lockPost("passkey-remove"); await lockStatus(); renderSecurity(); toast("已移除 Face ID", "ok"); } catch (err) { toast(err.message, "alert"); } }
+  if (t.id === "secLock") { await lockPost("lock"); showLock("unlock"); }
+});
+document.addEventListener("click", e => { if (e.target.closest('[data-pane="set-security"]')) lockStatus().then(renderSecurity).catch(() => {}); });
+
+// ---------- security monitoring ----------
+var SEC = null, secTimer = null;
+function secStart() { if (secTimer) return; loadSec(); secTimer = setInterval(loadSec, 10000); }
+function secStop() { clearInterval(secTimer); secTimer = null; }
+async function loadSec() {
+  if (document.hidden || !S || !S.me || S.me.role !== "owner") return;
+  try { SEC = await api("/api/security"); renderSec(); if (SEC.selftest.running) setTimeout(loadSec, 2000); }
+  catch (e) { $("#secScore").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+const SEC_IC = { ok: "tick", warn: "alert", bad: "x", info: "info", unknown: "info" };
+const SEC_WORD = { ok: "沒問題", warn: "建議處理", bad: "需要處理", info: "資訊", unknown: "無法確認" };
+function renderSec() {
+  const d = SEC; if (!d) return;
+  const scored = d.checks.filter(c => ["ok", "warn", "bad"].includes(c.status));
+  const pts = scored.reduce((a, c) => a + (c.status === "ok" ? 1 : c.status === "warn" ? 0.5 : 0), 0), score = Math.round(pts / Math.max(1, scored.length) * 100);
+  const nOk = scored.filter(c => c.status === "ok").length, nBad = scored.filter(c => c.status === "bad").length, nWarn = scored.length - nOk - nBad;
+  const col = nBad ? "#ff453a" : nWarn ? "#ff9f0a" : "#30d158", R = 40, L = 2 * Math.PI * R;
+  const evBad = d.recent.filter(e => (d.kinds[e.kind] || {}).level === "bad" && Date.now() / 1000 - e.t < 86400).length;
+  $("#secScore").innerHTML = `<div class="sec-score"><div class="ringbox" style="--c:${col}"><svg viewBox="0 0 96 96"><circle class="trk" cx="48" cy="48" r="${R}"/><circle class="val" cx="48" cy="48" r="${R}" stroke-dasharray="${(score / 100 * L).toFixed(1)} ${L.toFixed(1)}"/></svg><div class="rv">${score}</div></div>
+    <div class="grow"><div class="big">${nBad ? "有地方需要處理" : nWarn ? "大致安全" : "非常安全"}</div>
+      <div class="small muted">${nOk} 項沒問題・${nWarn} 項建議處理・${nBad} 項需要處理</div>
+      <div class="small muted">過去 24 小時 ${d.total} 個可疑事件${evBad ? `，其中 <b style="color:var(--bad)">${evBad} 個嚴重</b>` : ""}・封鎖中 ${d.bans.length} 個位址</div></div></div>
+    <div class="btns" style="margin-top:12px"><button class="btn" id="secRescan">${icon("refresh")}重新檢查</button><button class="btn primary" id="secRun" ${d.selftest.running ? "disabled" : ""}>${icon("shield")}${d.selftest.running ? "測試中…" : "自我攻擊測試"}</button></div>`;
+  const order = { bad: 0, warn: 1, unknown: 2, ok: 3, info: 4 };
+  $("#secChecks").innerHTML = d.checks.slice().sort((a, b) => order[a.status] - order[b.status]).map(c => `<div class="chk"><span class="ic ${c.status}" title="${SEC_WORD[c.status]}">${icon(SEC_IC[c.status])}</span>
+    <div class="grow"><div class="t">${esc(c.label)} <span class="sr-only">${SEC_WORD[c.status]}</span></div><div class="s">${esc(c.detail)}</div>
+    ${c.fix && c.status !== "ok" ? `<div class="fix">${c.fix.startsWith("sudo ") ? `在 Mac 的「終端機」執行：<code>${esc(c.fix)}</code><button class="btn sm" data-copy="${esc(c.fix)}">${icon("clipboard")}複製</button>` : `<span class="muted">${esc(c.fix)}</span>`}</div>` : ""}</div></div>`).join("");
+  secChart(d.hourly);
+  const kinds = Object.entries(d.by_kind).sort((a, b) => b[1] - a[1]), kmax = Math.max(1, ...kinds.map(k => k[1]));
+  $("#secKinds").innerHTML = kinds.length ? `<div class="bars" style="margin-top:10px">${kinds.map(([k, n]) => `<div class="b"><span class="n">${esc((d.kinds[k] || {}).label || k)}</span><span class="v">${fmtN(n)} 次</span><span class="track"><i style="width:${(n / kmax * 100).toFixed(1)}%"></i></span></div>`).join("")}</div>`
+    : `<div class="small muted" style="margin-top:6px">${icon("tick")} 過去 24 小時沒有可疑事件</div>`;
+  $("#secTable").innerHTML = `<table class="tbl"><tr><th>時間</th><th class="r">事件</th><th class="r">嚴重</th></tr>${d.hourly.slice().reverse().map(h => `<tr><td>${new Date(h.t * 1000).getHours()}:00</td><td class="r">${h.n}</td><td class="r">${h.bad}</td></tr>`).join("")}</table>`;
+  const st = d.selftest;
+  $("#secTest").innerHTML = st.running ? `<div class="small muted">${icon("clock")} 正在攻擊自己：${esc(st.progress)}…（約 25 秒）</div>`
+    : st.results.length ? `<div class="small muted" style="margin-bottom:4px">${ago(st.at)}測試・${st.results.filter(r => r.ok).length}/${st.results.length} 項擋下</div>` +
+      st.results.map(r => `<div class="chk"><span class="ic ${r.ok ? "ok" : "bad"}">${icon(r.ok ? "tick" : "x")}</span><div class="grow"><div class="t">${esc(r.name)}<span class="sr-only">${r.ok ? "已擋下" : "沒擋下"}</span></div><div class="s">${esc(r.desc)}・${esc(r.detail)}</div></div></div>`).join("")
+    : `<div class="small muted">用攻擊者的手法打一次自己的伺服器（猜網址、路徑穿越、慢速連線、超大請求、跨站、偽造身分…），確認每一道防線都還在。按上面的「自我攻擊測試」開始。</div>`;
+  $("#secBans").innerHTML = d.bans.length ? d.bans.map(b => `<div class="row"><div class="grow"><div class="t ip" style="font-family:ui-monospace,Menlo,monospace">${esc(b.ip)}</div><div class="s">${esc(b.reason)}・${new Date(b.until * 1000).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })} 解除</div></div>
+      <button class="btn sm" data-unban="${esc(b.ip)}">解除</button></div>`).join("")
+    : `<div class="small muted">沒有。同一個位址一小時內猜錯成員網址 ${d.rules.bad_token} 次、猜錯分享密碼 ${d.rules.share_pw} 次，就會自動封鎖 ${d.ban_hours} 小時，並推播通知你。</div>`;
+  $("#secEvents").innerHTML = d.recent.length ? d.recent.slice(0, 30).map(e => { const k = d.kinds[e.kind] || { label: e.kind, level: "warn" };
+    return `<div class="row sec-ev"><div class="grow"><div><span class="lvl ${k.level}">${icon(k.level === "bad" ? "alert" : k.level === "info" ? "info" : "alert")}${k.level === "bad" ? "嚴重" : k.level === "info" ? "提示" : "注意"}</span> <span class="k">${esc(k.label)}</span></div>
+      <div class="s">${ago(e.t)}${e.ip ? `・<span class="ip">${esc(e.ip)}</span>` : ""}${e.who ? "・" + esc(e.who) : ""}${e.detail ? "・" + esc(e.detail) : ""}</div></div></div>`; }).join("")
+    : `<div class="empty">還沒有安全事件</div>`;
+}
+function secChart(hourly) {
+  const el = $("#secChart"), W = Math.max(260, Math.round(el.clientWidth || 600)), H = 130, pl = 30, pb = 18, pt = 6, n = hourly.length;
+  const max = Math.max(4, ...hourly.map(h => h.n)), st = Math.pow(10, Math.floor(Math.log10(max))), nice = Math.ceil(max / st) * st;
+  const bw = (W - pl) / n, y = v => pt + (H - pt - pb) * (1 - v / nice);
+  let g = "";
+  for (let k = 0; k <= 2; k++) { const v = nice * k / 2, yy = y(v); g += `<line x1="${pl}" x2="${W}" y1="${yy}" y2="${yy}" stroke="var(--grid)"/><text x="${pl - 5}" y="${yy + 4}" font-size="11" text-anchor="end" fill="var(--muted)">${fmtN(v)}</text>`; }
+  let bars = "";
+  hourly.forEach((h, i) => {
+    const x = pl + i * bw + 1, w = Math.max(bw - 2, 1), base = y(0), warn = h.n - h.bad, hw = base - y(warn), hb = base - y(h.bad);
+    if (warn > 0) bars += `<path d="${roundTop(x, base - hw, w, hw, h.bad ? 0 : 3)}" fill="var(--series-1)"/>`;
+    if (h.bad > 0) bars += `<path d="${roundTop(x, base - hw - hb, w, Math.max(hb - (warn ? 2 : 0), 1), 3)}" fill="var(--series-2)"/>`;
+    bars += `<rect x="${pl + i * bw}" y="0" width="${bw}" height="${H}" fill="transparent" data-i="${i}"/>`;
+    if (i % 6 === 0) bars += `<text x="${x + w / 2}" y="${H - 4}" font-size="11" text-anchor="middle" fill="var(--muted)">${new Date(h.t * 1000).getHours()}:00</text>`;
+  });
+  el.className = "chart";
+  el.innerHTML = `<div class="legend"><span><i style="background:var(--series-1)"></i>一般</span><span><i style="background:var(--series-2)"></i>嚴重</span></div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="過去 24 小時每小時的可疑事件數">${g}${bars}</svg><div class="tip" hidden></div>`;
+  const svg = el.querySelector("svg"), tip = el.querySelector(".tip");
+  const show = e => { const r = e.target.closest("rect[data-i]"); if (!r) return; const h = hourly[+r.dataset.i], box = svg.getBoundingClientRect(), sx = box.width / W;
+    tip.innerHTML = `<b>${new Date(h.t * 1000).getHours()}:00</b>　${h.n} 個事件${h.bad ? `・嚴重 ${h.bad}` : ""}`; tip.hidden = false;
+    const tw = tip.offsetWidth / 2 + 2; tip.style.left = Math.min(Math.max((pl + (+r.dataset.i + .5) * bw) * sx, tw), box.width - tw) + "px"; tip.style.top = (y(h.n) * sx + 28) + "px"; };
+  svg.addEventListener("pointermove", show); svg.addEventListener("pointerdown", show);
+  svg.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") tip.hidden = true; });
+}
+document.addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "secRescan") { await act("sec_rescan", {}, "重新檢查中"); loadSec(); }
+  if (b.id === "secRun") { b.disabled = true; try { await act("sec_selftest", {}, "開始自我攻擊測試，約 25 秒"); } catch {} setTimeout(loadSec, 800); }
+  if (b.dataset.unban) { await act("sec_unban", { ip: b.dataset.unban }, "已解除封鎖"); loadSec(); }
+  if (b.id === "secBanBtn") { const ip = $("#secBanIp").value.trim(); if (!ip) return; try { await act("sec_ban", { ip, hours: 24 }, "已封鎖 " + ip); $("#secBanIp").value = ""; loadSec(); } catch {} }
+  if (b.dataset.copy && b.closest("#secChecks")) { try { await navigator.clipboard.writeText(b.dataset.copy); toast("已複製，貼到 Mac 的終端機執行", "ok"); } catch { toast("無法複製，請長按選取", "alert"); } }
+});
+
+// ---------- external disk stats ----------
+var diskTimer = null;
+async function loadDiskStats() {
+  try { renderDiskStats(await api("/api/drive/stats")); }
+  catch (e) { $("#diskInfo").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function renderDiskStats(d) {
+  {
+    if (!d.mounted) { $("#diskInfo").innerHTML = `<div class="banner bad">${icon("alert")} 外接硬碟沒有接上</div>`; $("#diskIo").textContent = ""; return; }
+    const h = d.hw || {}, pct = x => (x / d.total * 100);
+    $("#diskIo").innerHTML = d.io ? `${icon("activity")} ${d.io.mbs.toFixed(1)} MB/s` : "";
+    const seg = (w, c, t) => w > 0 ? `<i style="width:${Math.max(pct(w), .6).toFixed(2)}%;background:${c}" title="${esc(t)}"></i>` : "";
+    const kinds = d.kinds ? Object.entries(d.kinds.kinds).sort((a, b) => b[1].size - a[1].size) : [];
+    const kmax = Math.max(1, ...kinds.map(k => k[1].size));
+    $("#diskInfo").innerHTML = `
+      <div class="disk-big"><span class="v">${fmtB(d.free)}</span><span class="of">可用・共 ${fmtB(d.total)}</span></div>
+      <div class="stackbar" role="img" aria-label="雲端 ${fmtB(d.cloud)}，其他 ${fmtB(d.other)}，可用 ${fmtB(d.free)}">
+        ${seg(d.cloud, "var(--series-1)", "雲端檔案 " + fmtB(d.cloud))}${seg(d.other, "var(--series-2)", "其他檔案 " + fmtB(d.other))}</div>
+      <div class="disk-legend"><span><i style="background:var(--series-1)"></i>雲端檔案 ${fmtB(d.cloud)}</span>
+        <span><i style="background:var(--series-2)"></i>硬碟上其他檔案 ${fmtB(d.other)}</span>
+        <span><i style="background:var(--fill-2)"></i>可用 ${fmtB(d.free)}</span></div>
+      ${kinds.length ? `<div class="small muted" style="margin:14px 0 4px">雲端裡的檔案類型</div>` + kinds.map(([k, v]) => `<div class="kind-row"><span>${esc(k)}</span>
+        <span class="track"><i style="width:${(v.size / kmax * 100).toFixed(1)}%"></i></span><span class="v">${fmtB(v.size)}・${fmtN(v.count)} 個</span></div>`).join("")
+        : `<div class="small muted" style="margin-top:12px">${d.kinds ? "雲端裡還沒有檔案" : "正在統計檔案類型…"}</div>`}
+      <div class="mini-grid">${[
+        ["型號", esc((h.model || "—").replace(/^Micron /, ""))], ["連接", esc([h.bus, h.link].filter(Boolean).join(" ") || "—")],
+        ["格式", esc(h.format || "—")], ["健康監測", h.smart === "Verified" ? "正常" : h.smart === "Not Supported" ? "不支援" : esc(h.smart || "未知")],
+        ["檔案 / 資料夾", d.kinds ? `${fmtN(d.kinds.files)} / ${fmtN(d.kinds.folders)}` : "統計中…"],
+        ["目前傳輸", d.io ? `${d.io.mbs.toFixed(1)} MB/s` : "—"]].map(([k, v]) => `<div class="mini"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>`;
+  }
+}
+
+// ---------- notifications (bell + push) ----------
+var NOTIFY = null, ARR = {};
+async function loadNotify() {
+  try { NOTIFY = await api("/api/notify"); } catch { return; }
+  $("#bellDot").hidden = !NOTIFY.unread;
+  renderNotifySettings();
+}
+function renderNotifySettings() {
+  if (!NOTIFY || !$("#pushInfo")) return;
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const perm = supported ? Notification.permission : "unsupported";
+  let state = "";
+  if (!supported && !standalone) state = `<div class="banner">${icon("alert")} iPhone 要先把控制台<b>加入主畫面</b>，再從主畫面的圖示打開，才能開啟推播（iOS 16.4 以上）。</div>`;
+  else if (!supported) state = `<div class="banner bad">${icon("alert")} 這個瀏覽器不支援推播</div>`;
+  else if (perm === "denied") state = `<div class="banner bad">${icon("alert")} 推播被關掉了，請到 iPhone「設定 → 通知 → 控制台」打開</div>`;
+  $("#pushInfo").innerHTML = state + kv([["收通知的裝置", NOTIFY.subs.length ? NOTIFY.subs.length + " 台" : '<span class="pill">還沒有</span>']]) +
+    NOTIFY.subs.map(s => `<div class="row"><div class="grow"><div class="t">${esc(s.device)}</div><div class="s">${ago(s.added)} 開啟</div></div>
+      <button class="btn sm danger" data-unsub="${esc(s.endpoint)}">移除</button></div>`).join("") +
+    `<div class="btns" style="margin-top:12px">${supported && perm !== "denied" ? `<button class="btn primary" id="pushOn">${icon("bell")}在這支手機開啟推播</button>` : ""}
+      <button class="btn" id="pushTest">${icon("send")}發一則測試通知</button></div>`;
+  $("#notifyPrefs").innerHTML = Object.entries(NOTIFY.kinds).map(([k, l]) => `<div class="row"><div class="grow">${esc(l)}</div>
+    <label class="switch"><input type="checkbox" data-npref="${k}" ${NOTIFY.prefs[k] !== false ? "checked" : ""}><span></span></label></div>`).join("");
+}
+async function enablePush() {
+  try {
+    const reg = await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.ready;
+    if (await Notification.requestPermission() !== "granted") { toast("沒有允許通知", "alert"); return; }
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: unb64u(NOTIFY.public_key) });
+    const dev = /iPhone/.test(navigator.userAgent) ? "iPhone" : /iPad/.test(navigator.userAgent) ? "iPad" : /Mac/.test(navigator.userAgent) ? "Mac" : "裝置";
+    await api("/api/push/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: sub.toJSON(), device: dev }) });
+    toast("已開啟推播", "ok"); loadNotify();
+  } catch (e) { toast("開啟失敗：" + e.message, "alert"); }
+}
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.id === "pushOn") enablePush();
+  if (t.id === "pushTest") act("notify_test", {}, "已發送，幾秒內會收到");
+  if (t.dataset.unsub) { await act("notify_unsub", { endpoint_tail: t.dataset.unsub }, "已移除"); loadNotify(); }
+  if (t.id === "bellBtn") openNotifs();
+  if (t.id === "notifDone") $("#notifSheet").hidden = true;
+});
+document.addEventListener("change", async e => {
+  const t = e.target;
+  if (t.dataset.npref) { await act("notify_pref", { kind: t.dataset.npref, on: t.checked }); NOTIFY.prefs[t.dataset.npref] = t.checked; }
+  if (t.dataset.arr) { await act("arrival_toggle", { id: t.dataset.arr, on: t.checked }, t.checked ? "回到家時會通知你" : "已關閉到家通知"); ARR[t.dataset.arr] = t.checked; }
+  if (t.id === "backupSwitch") { await act("backup_toggle", { on: t.checked }, t.checked ? "每天凌晨 3 點自動備份" : "已關閉自動備份"); loadBackup(); }
+});
+$("#notifSheet").onclick = e => { if (e.target.id === "notifSheet") $("#notifSheet").hidden = true; };
+async function openNotifs() {
+  await loadNotify();
+  const C2 = { security: ["lock", "red"], disk: ["disk", "teal"], battery: ["battery", "orange"], service: ["server", "red"], device: ["devices", "blue"],
+    member: ["users", "purple"], message: ["inbox", "green"], arrival: ["home", "indigo"], backup: ["archive", "green"] };
+  $("#notifBody").innerHTML = (NOTIFY.log || []).length ? NOTIFY.log.map(n => { const [ic, c] = C2[n.kind] || ["bell", "gray"];
+    return `<div class="nrow ${n.read ? "" : "unread"}">${badge(ic, c, "devbadge")}<div class="grow"><div class="t">${esc(n.title)}</div><div class="s">${esc(n.body)}</div><div class="when">${ago(n.t)}</div></div></div>`; }).join("")
+    : `<div class="empty">還沒有通知</div>`;
+  $("#notifSheet").hidden = false;
+  if (NOTIFY.unread) { act("notify_read"); $("#bellDot").hidden = true; }
+}
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+setInterval(() => { if (S && S.me && S.me.role === "owner" && !document.hidden && $("#lock").hidden) loadNotify(); }, 60000);
+
+// ---------- messages ----------
+async function loadMsgs() {
+  try {
+    const d = await api("/api/messages");
+    const open = d.items.filter(m => !m.done).length;
+    $("#msgCount").textContent = open || "";
+    $("#msgList").innerHTML = d.items.length ? d.items.map(m => `<div class="row" style="align-items:flex-start;flex-wrap:wrap">
+      ${badge(m.done ? "tick" : "inbox", m.done ? "gray" : "green", "devbadge")}
+      <div class="grow"><div class="t" style="white-space:normal">${esc(m.from)}・${esc(d.types[m.kind] || m.kind)}</div><div class="s">${ago(m.at)}${m.done ? "・已處理" : ""}</div>
+        ${m.text ? `<div class="msg-text">${esc(m.text)}</div>` : ""}
+        ${m.reply ? `<div class="msg-text muted">${icon("reply")} 你的回覆：${esc(m.reply)}</div>` : ""}
+        ${m.done ? "" : `<div class="inline" style="margin-top:8px"><input type="text" placeholder="回覆（可以不填）" data-replyto="${esc(m.id)}"><button class="btn sm primary" data-msgdone="${esc(m.id)}">完成</button></div>`}</div>
+      <button class="btn sm iconbtn danger" data-msgdel="${esc(m.id)}" aria-label="刪除">${icon("x")}</button></div>`).join("")
+      : `<div class="empty">還沒有留言</div>`;
+  } catch (e) { $("#msgList").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+$("#msgList").onclick = async e => {
+  const d = e.target.closest("[data-msgdone]"), x = e.target.closest("[data-msgdel]");
+  if (d) { const inp = $(`[data-replyto="${CSS.escape(d.dataset.msgdone)}"]`); await act("msg_done", { id: d.dataset.msgdone, done: true, reply: inp ? inp.value : "" }, "已標記完成"); loadMsgs(); }
+  if (x) { if (x.dataset.confirm !== "1") { x.dataset.confirm = "1"; x.classList.remove("iconbtn"); x.textContent = "確定刪除？"; return; } await act("msg_delete", { id: x.dataset.msgdel }, "已刪除"); loadMsgs(); }
+};
+
+// ---------- shares + backup ----------
+async function loadShares() {
+  try {
+    const d = await api("/api/shares");
+    $("#shareList").innerHTML = d.items.length ? d.items.map(s => `<div class="row" style="flex-wrap:wrap">${badge(s.dir ? "folder" : "file", s.expired ? "gray" : "indigo", "devbadge")}
+      <div class="grow"><div class="t">${esc(s.name)}</div><div class="s" style="white-space:normal">${esc(s.creator.split("@")[0])} 建立・${s.expires ? new Date(s.expires * 1000).toLocaleDateString("zh-TW") + " 到期" : "永久"}・已下載 ${s.downloads}${s.max ? "/" + s.max : ""} 次${s.password ? "・有密碼" : ""}
+        ${s.expired ? `・<span style="color:var(--bad)">${esc(s.expired)}</span>` : ""}</div></div>
+      <button class="btn sm iconbtn" data-scopy="${esc(s.url)}" aria-label="複製連結">${icon("clipboard")}</button>
+      <button class="btn sm iconbtn danger" data-srevoke="${esc(s.id)}" aria-label="取消分享">${icon("x")}</button></div>`).join("")
+      : `<div class="small muted">還沒有分享連結。在雲端的檔案按「⋯ → 分享」就能建立。</div>`;
+  } catch (e) { $("#shareList").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+$("#shareList").onclick = async e => {
+  const c = e.target.closest("[data-scopy]"), r = e.target.closest("[data-srevoke]");
+  if (c) { try { await navigator.clipboard.writeText(c.dataset.scopy); toast("已複製", "ok"); } catch { toast("無法複製", "alert"); } }
+  if (r) { if (r.dataset.confirm !== "1") { r.dataset.confirm = "1"; r.classList.remove("iconbtn"); r.textContent = "確定取消？"; return; } await act("share_revoke", { id: r.dataset.srevoke }, "已取消分享，連結立即失效"); loadShares(); }
+};
+async function loadBackup() {
+  try {
+    const b = await api("/api/backup");
+    $("#backupInfo").innerHTML = `<div class="row"><div class="grow"><div class="t">每天凌晨 3 點自動備份</div><div class="s">把雲端複製一份到 Mac 內建硬碟（${esc(b.dir)}）</div></div>
+      <label class="switch"><input type="checkbox" id="backupSwitch" ${b.enabled ? "checked" : ""}><span></span></label></div>` +
+      kv([["上次備份", b.running ? '<span class="pill">備份中…</span>' : b.last ? ago(b.last) : "還沒有"], ["結果", b.result ? (b.result === "成功" ? PILLOK + "成功</span>" : `<span class="pill bad" style="white-space:normal">${esc(b.result)}</span>`) : "—"],
+        ["備份大小", fmtB(b.size)], ["Mac 剩餘空間", fmtB(b.free)]]) +
+      `<div class="btns" style="margin-top:10px"><button class="btn" id="backupNow" ${b.running ? "disabled" : ""}>${icon("archive")}立即備份</button></div>
+      <div class="small muted" style="margin-top:8px">Mac 內建硬碟空間不夠時會自動跳過並通知你。外接硬碟是 exFAT 格式，突然拔掉比較容易壞，多一份備份比較安心。</div>`;
+    $("#backupNow").onclick = async () => { try { await act("backup_now", {}, "開始備份"); setTimeout(loadBackup, 1500); } catch {} };
+  } catch (e) { $("#backupInfo").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+// ---------- speed test ----------
+$("#speedBtn").onclick = async e => {
+  const b = e.target.closest("button"); b.disabled = true; $("#speedOut").innerHTML = "測試下載中…";
+  try {
+    let t = performance.now(); const r = await fetch("/api/speed/down?mb=10", { cache: "no-store" }); const n = (await r.arrayBuffer()).byteLength;
+    const down = n * 8 / ((performance.now() - t) / 1000) / 1e6;
+    $("#speedOut").innerHTML = "測試上傳中…";
+    const blob = new Blob([new Uint8Array(5 << 20).map(() => Math.random() * 256)]);
+    t = performance.now(); await fetch("/api/speed/up", { method: "POST", headers: { "X-Filename": "speedtest" }, body: blob });
+    const up = blob.size * 8 / ((performance.now() - t) / 1000) / 1e6;
+    $("#speedOut").innerHTML = `<div class="speed-out"><div class="mini"><div class="k">${icon("down")} 下載</div><div class="v">${down.toFixed(1)} Mbps</div></div>
+      <div class="mini"><div class="k">${icon("up")} 上傳</div><div class="v">${up.toFixed(1)} Mbps</div></div></div>
+      <div class="small muted" style="margin-top:6px">${down > 20 ? "很快，看影片沒問題" : down > 5 ? "還不錯，一般使用沒問題" : "比較慢，可能是經過中繼伺服器或網路不好"}</div>`;
+  } catch (err) { $("#speedOut").textContent = "測試失敗：" + err.message; }
+  b.disabled = false;
+};
+
+// ---------- cloud drive ----------
+var DRV = null;
+const drvBadge = (ic, c, cls = "") => `<span class="badge ${cls}" style="--c:${c}">${icon(ic)}</span>`;
+function initDrive() {
+  if (!DRV) DRV = new DriveUI($("#drive"), { url: (op, params) => `/api/drive/${op}?` + new URLSearchParams(params || {}),
+    icon, esc, fmtB, toast, badge: drvBadge, onLocked: () => showLock(), onShared: () => loadShares() });
+  loadCloud();
+  clearInterval(diskTimer);
+  diskTimer = setInterval(() => { if ($('section[data-tab="cloud"]').classList.contains("show") && !document.hidden && $("#lock").hidden) loadDiskStats(); }, 5000);
+}
+function renderDriveUsage(d) {
+  {
+    $("#driveDisk").textContent = d.disk ? `${fmtB(d.disk.used)} / ${fmtB(d.disk.total)}` : "硬碟未接上";
+    const row = (name, used, quota, extra) => `<div class="row usage-row"><div class="grow"><div class="t">${esc(name)} ${extra || ""}</div>
+      <div class="s">${fmtB(used)}${quota ? " / " + fmtB(quota) : "・不限容量"}</div>
+      ${quota ? `<div class="meter"><i style="width:${Math.min(100, used / quota * 100).toFixed(1)}%"></i></div>` : ""}</div></div>`;
+    const SH = { none: "", ro: '<span class="pill">共用：只能看</span>', rw: '<span class="pill good">共用：可修改</span>' };
+    $("#driveUsage").innerHTML = row("你", d.mine_used, 0) + row("共用資料夾", d.shared_used, 0) +
+      d.people.map(p => row(p.login, p.used, p.quota, SH[p.shared])).join("") +
+      (d.people.length ? "" : `<div class="empty">還沒有成員啟用雲端</div>`);
+  }
+}
+// one round trip for the whole cloud tab; the last answer is shown instantly next time
+function renderCloud(sum, fresh) {
+  renderDiskStats(sum.stats); renderDriveUsage(sum.usage);
+  if (fresh || !DRV.roots.length) DRV.start(sum.roots);
+}
+async function loadCloud() {
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem("cloudSummary") || "null"); } catch {}
+  if (cached) renderCloud(cached, false);
+  try {
+    const sum = await api("/api/drive/summary");
+    renderCloud(sum, true);
+    try { localStorage.setItem("cloudSummary", JSON.stringify(sum)); } catch {}
+  } catch (e) { if (!cached) $("#driveUsage").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+// ---------- member portal links ----------
+document.addEventListener("click", async e => {
+  const c = e.target.closest("[data-plink]"), q = e.target.closest("[data-pqr]"), r = e.target.closest("[data-prot]");
+  if (!(c || q || r) || !M) return;
+  e.stopPropagation();
+  const p = M.people[+(c || q || r).dataset[c ? "plink" : q ? "pqr" : "prot"]];
+  if (c) { try { await navigator.clipboard.writeText(p.portal_url); toast("已複製 " + p.login + " 的客戶端網址", "ok"); } catch { toast("無法複製", "alert"); } return; }
+  if (q) { showLinkQR(p.login + " 的客戶端網址", p.portal_url, "開啟網址", "網址已複製"); return; }
+  if (r.dataset.confirm !== "1") { r.dataset.confirm = "1"; r.innerHTML = "確定？舊網址會失效"; setTimeout(() => { if (r.isConnected) { r.dataset.confirm = ""; r.innerHTML = icon("refresh") + "換網址"; } }, 3500); return; }
+  try { const d = await act("portal_rotate", { login: p.login }, "已換新網址"); p.portal_url = d.url; renderMembers(); } catch {}
+}, true);
+
+// ---------- Shadowrocket ----------
+var PX = null;
+async function loadProxy() {
+  try { PX = await api("/api/proxy"); renderProxy(); }
+  catch (e) { $("#srList").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function renderProxy() {
+  const d = PX; let b = "";
+  if (!d.running) b += `<div class="banner bad">${icon("alert")} Xray 沒有在執行，Shadowrocket 連不上</div>`;
+  if (d.error) b += `<div class="banner bad">${icon("alert")} ${esc(d.error)}</div>`;
+  if (!d.funnel) b += `<div class="banner bad">${icon("alert")} 對外入口（Funnel ${d.port}）沒有開，外面連不進來</div>`;
+  $("#srBanner").innerHTML = b;
+  $("#srList").innerHTML = d.accounts.map((a, i) => `<div class="row">
+    ${badge(a.owner ? "crown" : "rocket", a.owner ? "yellow" : a.active ? "indigo" : "gray", "devbadge")}
+    <div class="grow"><div class="t">${esc(a.owner ? a.login + "（你）" : a.login)}
+      ${a.active ? `<span class="pill good">${esc(a.status)}</span>` : `<span class="pill bad">${esc(a.status)}</span>`}
+      ${a.filter ? `<span class="pill">有上網限制</span>` : ""}</div>
+      <div class="s usage">${icon("down")} ${fmtB(a.usage.down)}・${icon("up")} ${fmtB(a.usage.up)}</div></div>
+    <button class="btn sm iconbtn" data-srqr="${i}" aria-label="QR code" title="QR code">${icon("qr")}</button>
+    <button class="btn sm iconbtn danger" data-srrot="${i}" aria-label="換金鑰" title="換金鑰">${icon("refresh")}</button></div>`).join("")
+    + (d.accounts.length === 1 ? `<div class="small muted" style="margin-top:6px">要給別人用：在上面成員名單新增一個人、打開他的「Shadowrocket 帳號」，儲存後就會出現在這裡。</div>` : "");
+}
+$("#srReload").onclick = loadProxy;
+$("#srList").onclick = async e => {
+  const q = e.target.closest("[data-srqr]"), r = e.target.closest("[data-srrot]");
+  if (q) { const a = PX.accounts[+q.dataset.srqr]; if (a.link) showQR(a); return; }
+  if (!r) return;
+  const a = PX.accounts[+r.dataset.srrot];
+  if (r.dataset.confirm !== "1") { r.dataset.confirm = "1"; r.classList.remove("iconbtn"); r.innerHTML = "確定換？"; toast("再按一次確定：舊的連結會立刻失效", "alert");
+    setTimeout(() => { if (r.isConnected) { r.dataset.confirm = ""; r.classList.add("iconbtn"); r.innerHTML = icon("refresh"); } }, 3500); return; }
+  r.disabled = true;
+  try { await act("proxy_rotate", { target: a.login }, "已換新金鑰，請重新匯入"); await loadProxy(); const n = PX.accounts.find(x => x.login === a.login); if (n) showQR(n); }
+  catch { r.disabled = false; }
+};
+function showQR(a) { showLinkQR(a.owner ? "你的 Shadowrocket" : a.login + " 的 Shadowrocket", a.link, "用 Shadowrocket 開啟", "已複製，打開 Shadowrocket 會自動偵測", "rocket"); }
+function showLinkQR(title, link, openLabel, copyMsg, ic = "qr") {
+  const a = { link };
+  $("#qrTitle").innerHTML = icon(ic) + " " + esc(title);
+  try { const qr = qrcode(0, "M"); qr.addData(a.link); qr.make(); $("#qrBox").innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); }
+  catch (e) { $("#qrBox").innerHTML = `<div class="empty">QR 產生失敗：${esc(e.message)}</div>`; }
+  $("#qrOpen").href = a.link; $("#qrOpen").innerHTML = icon(ic) + openLabel;
+  $("#qrCopy").innerHTML = icon("clipboard") + "複製連結";
+  $("#qrCopy").onclick = async () => { try { await navigator.clipboard.writeText(a.link); toast(copyMsg, "ok"); } catch { toast("無法複製，請改用 QR code", "alert"); } };
+  $("#qrModal").hidden = false;
+}
+$("#qrClose").onclick = () => { $("#qrModal").hidden = true; $("#qrBox").innerHTML = ""; };
+$("#qrModal").onclick = e => { if (e.target.id === "qrModal") $("#qrClose").onclick(); };
+
+// remote
+const msg = () => $("#msg").value.trim();
+$("#notifyBtn").onclick = () => msg() && act("notify", { text: msg() }, "已傳送通知");
+$("#sayBtn").onclick = () => msg() && act("say", { text: msg() }, "Mac 正在念…");
+var volT; $("#vol").oninput = e => { $("#volVal").textContent = e.target.value; clearTimeout(volT); volT = setTimeout(() => act("volume", { level: +e.target.value }), 250); };
+$("#muteBtn").onclick = () => act("mute", {}, "已靜音");
+$("#clipGet").onclick = async () => { const d = await act("clipboard_get"); $("#clip").value = d.text; toast("已讀取 Mac 剪貼簿"); };
+$("#clipSet").onclick = () => act("clipboard_set", { text: $("#clip").value }, "已送到 Mac 剪貼簿");
+$("#clipCopy").onclick = async () => { try { await navigator.clipboard.writeText($("#clip").value); toast("已複製到手機"); } catch { $("#clip").select(); toast("請長按選取後複製"); } };
+$("#openBtn").onclick = () => { let u = $("#url").value.trim(); if (!u) return; if (!/^https?:\/\//.test(u)) u = "https://" + u; act("open_url", { url: u }, "已在 Mac 上開啟"); };
+$("#sleepBtn").onclick = () => act("display_sleep", {}, "已關閉 Mac 螢幕");
+$("#awakeSwitch").onchange = e => act("keep_awake", { on: e.target.checked }, e.target.checked ? "Mac 不會自動睡眠" : "已恢復自動睡眠");
+
+// ---------- query log ----------
+const REASON = { FilteredBlackList: ["已擋", "bad"], FilteredBlockedService: ["封鎖 App", "bad"], FilteredSafeBrowsing: ["危險網站", "bad"],
+  FilteredParental: ["家長控制", "bad"], NotFilteredWhiteList: ["放行規則", "good"], Rewrite: ["改寫", ""], RewriteEtcHosts: ["hosts", ""] };
+function clientName(ip) { if (!S || !S.tailscale || !S.tailscale.ok) return esc(ip); const all = [S.tailscale.self, ...S.tailscale.peers];
+  const p = all.find(p => p.ips.includes(ip)); return p ? osIcon(p.os) + " " + esc(p.name) : esc(ip); }
+var logT;
+async function loadLog() {
+  try {
+    const q = new URLSearchParams({ search: $("#logSearch").value.trim(), status: $("#logStatus").value, limit: 80 });
+    const d = await api("/api/querylog?" + q);
+    $("#logList").innerHTML = d.rows.map(r => { const [lab, cls] = REASON[r.reason] || ["", ""];
+      return `<div class="row" data-d="${esc(r.domain)}"><div class="grow"><div class="dom">${esc(r.domain)} <span class="muted small">${esc(r.type)}</span></div>
+        <div class="s">${new Date(r.time).toLocaleTimeString("zh-TW")}・${clientName(r.client)}・${(+r.ms).toFixed(0)} ms</div></div>
+        ${lab ? `<span class="pill ${cls}">${lab}</span>` : ""}
+        ${cls === "bad" ? `<button class="btn sm" data-rule="allow">放行</button>` : `<button class="btn sm danger" data-rule="block">擋</button>`}</div>`; }).join("") || `<div class="empty">沒有紀錄</div>`;
+  } catch (e) { $("#logList").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+$("#logSearch").oninput = () => { clearTimeout(logT); logT = setTimeout(loadLog, 300); };
+$("#logStatus").onchange = loadLog;
+setInterval(() => { if ($("#logAuto").checked && !$("#ad-log").hidden && $('section[data-tab="adblock"]').classList.contains("show") && !document.hidden) loadLog(); }, 4000);
+
+// ---------- blocked services ----------
+var SV = null, svcGroup = "popular";
+const POPULAR = ["youtube","tiktok","facebook","instagram","twitter","netflix","discord","twitch","reddit","snapchat","whatsapp","telegram","line","roblox","steam","epic_games","minecraft","leagueoflegends","spotify","disneyplus","chatgpt","shopee","pinterest","threads"];
+const GROUP_ZH = { popular: "熱門", selected: "已封鎖", all: "全部", ai: "AI", cdn: "CDN", dating: "交友", gambling: "博弈", gaming: "遊戲", hosting: "主機", messenger: "通訊", music: "音樂", privacy: "隱私", shopping: "購物", social_network: "社群", software: "軟體", streaming: "影音" };
+async function loadServices() {
+  try { SV = await api("/api/blocked_services"); renderServices(); } catch (e) { $("#svcGrid").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function renderServices() {
+  if (!SV) return;
+  const groups = ["popular", "selected", ...SV.groups.map(g => g.id), "all"];
+  $("#svcGroups").innerHTML = groups.map(g => `<button data-g="${g}" class="${g === svcGroup ? "on" : ""}">${GROUP_ZH[g] || g}</button>`).join("");
+  const q = $("#svcSearch").value.trim().toLowerCase(), cur = new Set(SV.current);
+  let list = SV.services;
+  if (q) list = list.filter(s => s.name.toLowerCase().includes(q) || s.id.includes(q));
+  else if (svcGroup === "popular") list = list.filter(s => POPULAR.includes(s.id)).sort((a, b) => POPULAR.indexOf(a.id) - POPULAR.indexOf(b.id));
+  else if (svcGroup === "selected") list = list.filter(s => cur.has(s.id));
+  else if (svcGroup !== "all") list = list.filter(s => s.group === svcGroup);
+  $("#svcCount").textContent = `已封鎖 ${cur.size} 個`;
+  $("#svcGrid").innerHTML = list.map(s => `<div class="svc ${cur.has(s.id) ? "on" : ""}" data-svc="${esc(s.id)}"><span class="ic">${s.icon ? atobSafe(s.icon) : icon("globe")}</span><span>${esc(s.name)}</span></div>`).join("") || `<div class="empty">沒有符合的項目</div>`;
+}
+function atobSafe(b64) { try { const svg = new TextDecoder().decode(Uint8Array.from(atob(b64), c => c.charCodeAt(0))); return /^\s*<svg[\s>]/.test(svg) && !/<script|on\w+=/i.test(svg) ? svg : icon("globe"); } catch { return icon("globe"); } }
+$("#svcGroups").onclick = e => { const b = e.target.closest("button"); if (b) { svcGroup = b.dataset.g; $("#svcSearch").value = ""; renderServices(); } };
+$("#svcSearch").oninput = renderServices;
+$("#svcGrid").onclick = async e => {
+  const c = e.target.closest("[data-svc]"); if (!c) return;
+  const id = c.dataset.svc, cur = new Set(SV.current), on = !cur.has(id);
+  on ? cur.add(id) : cur.delete(id);
+  SV.current = [...cur]; renderServices();
+  try { await act("agh_services_set", { ids: SV.current }, (on ? "已封鎖 " : "已解除 ") + c.textContent.trim()); } catch { loadServices(); }
+};
+
+</script>
+</body>
+</html>

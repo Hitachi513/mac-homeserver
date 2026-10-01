@@ -1,0 +1,29 @@
+# Allow-list: NOTHING is committed unless it is listed below.
+# This folder also holds member data, keys, passwords and logs — they must never reach GitHub.
+*
+!.gitignore
+!README.md
+!LICENSE
+!SECURITY.md
+!config.example.json
+!requirements.txt
+!install.sh
+!uninstall.sh
+!launchd/
+!launchd/*.plist.in
+!launchd/AdGuardHome.yaml.in
+!security/
+!security/harden.sh
+!security/undo.sh
+!security/pf-homeserver.conf
+!dashboard/
+!dashboard/*.py
+!dashboard/index.html
+!dashboard/portal.html
+!dashboard/share.html
+!dashboard/static/
+!dashboard/static/drive.js
+!dashboard/static/sw.js
+!dashboard/static/manifest.json
+!dashboard/static/qrcode.js
+!dashboard/static/icon-180.png
