@@ -16,6 +16,9 @@
 | 👨‍👩‍👧 **成員管理** | 每個人的權限、有效期限、可用時段、每天可用時數、流量報表；每人一個專屬網頁 |
 | 📱 **控制台** | 4 位數密碼＋Face ID 上鎖、推播通知、Mac 狀態（CPU／記憶體／電池／趨勢圖）、網速測試、遠端遙控 |
 | 🔒 **安全監測** | 安全分數、16 項健康檢查、可疑事件統計、自動封鎖、一鍵「自我攻擊測試」 |
+| 🔑 **成員網頁密碼** | 秘密網址之外再加一道密碼；記住裝置 30 天、重設密碼會登出所有裝置、猜錯會鎖定 |
+| 😀 **個人設定** | 成員點頭像可以換照片／表情符號、取暱稱、開大字、改密碼 |
+| 🐞 **問題回報** | 家人在專屬網頁回報（可附截圖），GitHub issues 也一起列在控制台，可以改狀態、回覆、標籤 |
 | 🚀 **Shadowrocket**（選用，預設關閉） | 讓不裝 Tailscale 的人用 Shadowrocket 連回家 ⚠️ 見下方「法律注意」 |
 
 ## 需要準備
@@ -48,6 +51,7 @@ sudo bash ~/homeserver/security/harden.sh
 ```
 
 所有個人設定都在 `~/homeserver/config.json`（範例：[`config.example.json`](config.example.json)）。
+想在控制台同時管理 GitHub 上的回報，在 config.json 加上 `"github_repo": "你的帳號/你的repo"`（需要先用 `gh auth login` 登入）。
 移除：`bash ~/homeserver/uninstall.sh`（資料會保留）。
 
 ## 架構

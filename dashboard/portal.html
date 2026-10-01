@@ -34,6 +34,45 @@ html.big .hero .chips { flex-wrap: wrap; overflow: visible; }
 .msg-text { white-space: pre-wrap; word-break: break-word; margin-top: 4px; font-size: 14px; }
 .urlbox { font: 12px ui-monospace, Menlo, monospace; word-break: break-all; padding: 10px 12px; border-radius: 12px; background: var(--fill); margin: 8px 0; user-select: all; -webkit-user-select: all; }
 .speed-out { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.pav { width: 56px; height: 56px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; position: relative;
+  background: var(--c, #5e5ce6); color: #fff; font-size: 24px; font-weight: 800; border: 0; padding: 0; cursor: pointer; box-shadow: var(--shadow); }
+.pav img { width: 100%; height: 100%; object-fit: cover; }
+.pav .emo { font-size: 30px; line-height: 1; }
+.pav-edit { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--glass-strong); color: var(--text); font-size: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.who .pav-wrap { position: relative; flex: none; }
+.pav.big { width: 96px; height: 96px; font-size: 40px; margin: 6px auto 12px; cursor: default; }
+.pav.big .emo { font-size: 52px; }
+.emo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+.emo-grid button { height: 44px; border-radius: 12px; border: 2px solid transparent; background: var(--fill); font-size: 24px; cursor: pointer; }
+.emo-grid button.on, .color-row button.on { border-color: var(--accent); }
+.color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.color-row button { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; box-shadow: inset 0 0 0 2px rgba(255,255,255,.6); }
+.lockscreen { max-width: 360px; margin: 40px auto 0; text-align: center; }
+.lockscreen .pav { margin: 0 auto 12px; width: 80px; height: 80px; font-size: 34px; cursor: default; }
+.lockscreen .pav .emo { font-size: 44px; }
+.lockscreen form { display: flex; gap: 8px; margin-top: 16px; }
+.lockscreen input { flex: 1; font-size: 16px; }
+.prof .sect { padding: 14px 0; border-top: 1px solid var(--grid); }
+.prof .sect:first-child { border-top: 0; }
+.prof .st { font-weight: 700; margin-bottom: 8px; }
+.prof input[type=text], .prof input[type=password] { width: 100%; font-size: 16px; margin-bottom: 8px; }
+.bugf .sect { padding: 12px 0; border-top: 1px solid var(--grid); } .bugf .sect:first-child { border-top: 0; }
+.bugf .st { font-weight: 700; margin-bottom: 8px; }
+.bugf input[type=text], .bugf textarea { width: 100%; font: inherit; font-size: 16px; }
+.bugf textarea { min-height: 110px; resize: vertical; }
+.shotprev { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.shotprev img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; }
+.mybug { padding: 12px 0; border-top: 1px solid var(--grid); }
+.mybug:first-child { border-top: 0; }
+.mybug .t { font-weight: 650; overflow-wrap: anywhere; }
+.mybug .s { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.bst { display: inline-flex; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--fill); color: var(--text-2); white-space: nowrap; }
+.bst.new { background: var(--accent); color: #fff; } .bst.doing { background: #e08a00; color: #fff; } .bst.fixed { background: var(--good); color: #fff; }
+.bmsg { padding: 8px 12px; border-radius: 14px; margin: 6px 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bmsg.owner { background: color-mix(in srgb, var(--accent) 14%, transparent); } .bmsg.me { background: var(--fill); }
+.bmsg .w { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.newdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); margin-left: 6px; vertical-align: 2px; }
 .readonly { font-size: 11px; font-weight: 700; letter-spacing: .5px; padding: 3px 8px; border-radius: 99px; background: var(--fill); color: var(--muted); }
 </style>
 </head>
@@ -48,6 +87,18 @@ html.big .hero .chips { flex-wrap: wrap; overflow: visible; }
   <div class="stack" id="app"><div class="card"><div class="skel"><i></i><i></i><i></i></div></div><div class="card"><div class="skel"><i></i><i></i><i></i></div></div></div>
 </main>
 <div class="toast" id="toast"></div>
+<div class="sheet" id="bugSheet" hidden>
+  <div class="sheet-box">
+    <div class="sheet-head"><div class="t">回報問題</div><button class="done" id="bugCancel">取消</button></div>
+    <div class="sheet-body" id="bugForm"></div>
+  </div>
+</div>
+<div class="sheet" id="profSheet" hidden>
+  <div class="sheet-box">
+    <div class="sheet-head"><div class="t">個人設定</div><button class="done" id="profDone">完成</button></div>
+    <div class="sheet-body" id="profBody"></div>
+  </div>
+</div>
 
 <script>
 const $ = s => document.querySelector(s);
@@ -161,13 +212,41 @@ const loadJs = f => new Promise(res => { const sc = document.createElement("scri
 const qrLib = loadJs("qrcode.js"), driveLib = loadJs("drive.js");
 var DRV = null;
 var D = null;
+var LOCKED = false;  // on the password screen: don't poll anything that needs a login
+
+// avatar: uploaded photo > emoji > first letter, on the member's colour
+function avatarHtml(pr, name, cls = "") {
+  pr = pr || {};
+  const inner = pr.photo ? `<img src="${BASE}avatar.jpg?v=${pr.v || 0}" alt="">` : pr.emoji ? `<span class="emo">${esc(pr.emoji)}</span>` : esc([...(name || "?")][0].toUpperCase());
+  return `<span class="pav ${cls}" style="--c:${esc(pr.color || "#5e5ce6")}">${inner}</span>`;
+}
+async function showLock() {
+  LOCKED = true;
+  let info = {};
+  try { info = await (await fetch(BASE + "lockinfo", { cache: "no-store" })).json(); } catch {}
+  $("#liveDot").className = "dot";
+  $("#pageSub").textContent = "需要密碼";
+  $("#app").innerHTML = `<div class="card lockscreen">${avatarHtml(info, info.name)}
+    <h2 style="justify-content:center;margin:0 0 4px">嗨，${esc(info.name || "")}</h2><div class="small muted">為了安全，請輸入管理員給你的密碼</div>
+    <form id="pwForm"><input type="password" id="pwIn" placeholder="密碼" autocomplete="current-password" autofocus><button class="btn primary">進入</button></form>
+    <div class="small" id="pwErr" style="color:var(--bad);min-height:20px;margin-top:8px"></div>
+    <div class="small muted">這台裝置會記住 30 天，不用每次都輸入。忘記密碼請問管理員。</div></div>`;
+  $("#pwForm").onsubmit = async e => {
+    e.preventDefault();
+    const r = await fetch(BASE + "login", { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "portal" }, body: JSON.stringify({ password: $("#pwIn").value }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.ok) { LOCKED = false; D = null; load(); loadMsgs(); loadBugs(); toast("歡迎回來", "ok"); } else { $("#pwErr").textContent = j.error || "密碼錯誤"; $("#pwIn").select(); }
+  };
+}
 
 async function load() {
   try {
     const r = await fetch(BASE + "me", { cache: "no-store" });
+    if (r.status === 401) { if (!$("#pwForm")) showLock(); return; }
     if (!r.ok) throw new Error(r.status === 404 ? "這個網址已失效，請向管理員索取新的網址" : r.status === 429 ? "嘗試太多次，請稍後再試" : "HTTP " + r.status);
     D = await r.json(); $("#liveDot").className = "dot on";
     const ta = $("#msgText"); if (ta && (ta.value || document.activeElement === ta)) return;  // don't wipe a half-typed message
+    if ([...document.querySelectorAll("[data-bugreply]")].some(i => i.value || document.activeElement === i)) return;
     render();
   } catch (e) {
     $("#liveDot").className = "dot off";
@@ -183,9 +262,9 @@ function render() {
   if (d.shadowrocket.on) chips.push(["rocket", "indigo", "Shadowrocket"]);
   if (d.tailscale.member) chips.push(["wifi", "blue", "Tailscale"]);
   if (d.filter.on) chips.push(["shield", "orange", "有上網限制"]);
-  const initial = esc([...(d.name || "?")][0].toUpperCase());
-  out.push(`<div class="card hero"><div class="who"><span class="avatar badge" style="--c:#5e5ce6;width:56px;height:56px;border-radius:50%;font-size:24px;font-weight:800">${initial}</span>
-      <div><div class="hi">${hi}，</div><div class="name">${esc(d.name)}</div></div></div>
+  const pr = d.profile || {}, shown = pr.nickname || d.name;
+  out.push(`<div class="card hero"><div class="who"><button class="pav-wrap" id="avBtn" aria-label="個人設定" style="border:0;background:none;padding:0;cursor:pointer">${avatarHtml(pr, shown)}<span class="pav-edit">${icon("edit")}</span></button>
+      <div><div class="hi">${hi}，</div><div class="name">${esc(shown)}</div></div></div>
     <div class="chips">${chips.map(([i, c, t]) => `<span class="stat-chip" style="--c:${C[c]}">${icon(i)}${t}</span>`).join("")}</div></div>`);
   const now = new Date();
   $("#pageSub").textContent = `${now.getMonth() + 1}月${now.getDate()}日・${d.active ? "可以使用" : d.status}`;
@@ -222,7 +301,7 @@ function render() {
 
   // iPhone photo auto-backup (Shortcuts)
   if (d.drive.on && d.active && d.drive.backup !== false) {
-    const up = location.origin + BASE + "drive/upload?" + new URLSearchParams({ path: "/mine/相機備份", mkdir: "1", skip_existing: "1" });
+    const up = location.origin + BASE + "drive/upload?" + new URLSearchParams({ path: "/mine/相機備份", mkdir: "1", skip_existing: "1", ...(d.backup_key ? { key: d.backup_key } : {}) });
     out.push(card("camera", "pink", "iPhone 照片自動備份", `<div class="small muted">用 iPhone 內建的「捷徑」App，每天自動把新照片存到你的雲端「相機備份」資料夾，不用另外下載 App。</div>
       <div class="urlbox" id="upUrl">${esc(up)}</div>
       <div class="btns"><button class="btn primary" id="copyUp">${icon("clipboard")}複製上傳網址</button></div>
@@ -285,6 +364,11 @@ function render() {
       <div class="small muted" style="margin-top:8px">這些限制由管理員設定。</div>`));
   }
 
+  // bug reports
+  out.push(card("alert", "orange", "回報問題", `<div class="small muted">網頁、雲端、連線有怪怪的地方嗎？告訴管理員，可以附截圖。</div>
+    <div class="btns" style="margin-top:10px"><button class="btn primary" id="bugNew">${icon("edit")}我要回報問題</button></div>
+    <div id="myBugs" style="margin-top:6px"></div>`, 'id="bugCard"'));
+
   // message to admin
   out.push(card("inbox", "green", "留言給管理員", `<div class="msgbox">
       <div class="msg-kinds" id="msgKinds">${Object.entries(MSGT).map(([k, l], i) => `<button class="chipbtn ${i === 0 ? "on" : ""}" data-mk="${k}">${esc(l)}</button>`).join("")}</div>
@@ -306,7 +390,7 @@ function render() {
     if (!window.DriveUI) return;
     if (DRV) { $("#drive").replaceWith(driveEl); return; }
     DRV = new DriveUI($("#drive"), { url: (op, params) => BASE + "drive/" + op + "?" + new URLSearchParams(params || {}), headers: { "X-Requested-With": "portal" }, shareRoots: ["mine"],
-      icon, esc, fmtB, toast, badge: (ic, c, cls = "") => `<span class="badge ${cls}" style="--c:${c}">${icon(ic)}</span>` });
+      icon, esc, fmtB, toast, badge: (ic, c, cls = "") => `<span class="badge ${cls}" style="--c:${c}">${icon(ic)}</span>`, onLocked: () => showLock() });
     DRV.start();
   });
 
@@ -324,12 +408,125 @@ function render() {
   $("#msgSend").onclick = sendMsg;
   $("#speedBtn").onclick = speedTest;
   renderMsgs();
+  renderMyBugs();
 }
+
+// ---------- personal settings (tap your avatar) ----------
+const EMOJIS = ["😀", "😎", "🥰", "🤓", "🐱", "🐶", "🦊", "🐼", "🐨", "🦁", "🐯", "🐸", "🐵", "🐧", "🦄", "🐳", "🌸", "🌻", "⭐️", "🍀", "🍓", "🍩", "⚽️", "🎮", "🎧", "🚀", "🌈", "🔥"];
+const COLORS = ["#5e5ce6", "#0a84ff", "#32ade6", "#30d158", "#ff9f0a", "#ff375f", "#bf5af2", "#8e8e93"];
+const post = (path, body) => fetch(BASE + path, { method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "portal" }, body: JSON.stringify(body) })
+  .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok || j.ok === false) throw new Error(j.error || "HTTP " + r.status); return j; });
+var PR = null;
+function openProfile() {
+  PR = { ...(D.profile || {}) };
+  renderProfile(); $("#profSheet").hidden = false;
+}
+function renderProfile() {
+  const d = D, pr = PR, big = document.documentElement.classList.contains("big");
+  $("#profBody").innerHTML = `<div class="prof">
+    <div class="sect" style="text-align:center">${avatarHtml(pr, pr.nickname || d.name, "big")}
+      <div class="btns" style="justify-content:center"><label class="btn sm">${icon("camera")}上傳照片<input type="file" accept="image/*" id="avFile" hidden></label>
+      ${pr.photo ? `<button class="btn sm" id="avRemove">${icon("x")}移除照片</button>` : ""}</div></div>
+    <div class="sect"><div class="st">或選一個頭像</div><div class="emo-grid">${EMOJIS.map(e => `<button data-emo="${e}" class="${pr.emoji === e && !pr.photo ? "on" : ""}" aria-label="${e}">${e}</button>`).join("")}</div>
+      <div class="st" style="margin-top:12px">背景顏色</div><div class="color-row">${COLORS.map(c => `<button data-color="${c}" class="${pr.color === c ? "on" : ""}" style="background:${c}" aria-label="顏色 ${c}"></button>`).join("")}</div></div>
+    <div class="sect"><div class="st">暱稱</div><input type="text" id="nickIn" maxlength="20" value="${esc(pr.nickname || "")}" placeholder="${esc(d.name)}">
+      <div class="small muted">網頁最上面會用這個名字跟你打招呼</div></div>
+    <div class="sect"><div class="st">顯示</div><div class="btns"><button class="btn sm ${big ? "primary" : ""}" id="pfBig">${icon("type")}大字模式：${big ? "開" : "關"}</button></div></div>
+    <div class="sect"><div class="st">${icon("lock")} 密碼</div>
+      ${d.has_password ? `<input type="password" id="pwCur" placeholder="目前的密碼" autocomplete="current-password">` : `<div class="small muted" style="margin-bottom:8px">目前沒有密碼，任何拿到這個網址的人都能打開。可以自己設一個。</div>`}
+      <input type="password" id="pwNew" placeholder="新密碼（至少 4 個字）" autocomplete="new-password">
+      <div class="btns"><button class="btn sm" id="pwSave">${d.has_password ? "更改密碼" : "設定密碼"}</button>${d.has_password ? `<button class="btn sm danger" id="logoutBtn">登出這台裝置</button>` : ""}</div></div>
+  </div>`;
+}
+async function saveProfile(extra) {
+  try { const j = await post("profile", { nickname: $("#nickIn") ? $("#nickIn").value : PR.nickname, emoji: PR.emoji || "", color: PR.color, ...(extra || {}) });
+    PR = { ...j.profile }; D.profile = j.profile; renderProfile(); render(); return true; }
+  catch (e) { toast(e.message, "alert"); return false; }
+}
+document.addEventListener("click", async e => {
+  if (e.target.closest("#avBtn")) return openProfile();
+  if (e.target.closest("#profDone")) { if (await saveProfile()) { $("#profSheet").hidden = true; toast("已儲存", "ok"); } return; }
+  if (e.target.id === "profSheet") { $("#profSheet").hidden = true; return; }
+  const em = e.target.closest("[data-emo]"); if (em) { PR.emoji = em.dataset.emo; if (PR.photo) await saveProfile({ remove_photo: true }); else saveProfile(); return; }
+  const co = e.target.closest("[data-color]"); if (co) { PR.color = co.dataset.color; saveProfile(); return; }
+  if (e.target.closest("#avRemove")) { saveProfile({ remove_photo: true }); return; }
+  if (e.target.closest("#pfBig")) { $("#bigBtn").click(); renderProfile(); return; }
+  if (e.target.closest("#pwSave")) {
+    try { await post("password", { current: $("#pwCur") ? $("#pwCur").value : "", new: $("#pwNew").value }); D.has_password = true; toast("密碼已更新", "ok"); renderProfile(); }
+    catch (err) { toast(err.message, "alert"); } return; }
+  if (e.target.closest("#logoutBtn")) { await post("logout", {}).catch(() => {}); $("#profSheet").hidden = true; D = null; DRV = null; showLock(); return; }
+});
+document.addEventListener("change", async e => {
+  if (e.target.id !== "avFile" || !e.target.files[0]) return;
+  const f = e.target.files[0]; toast("上傳中…");
+  try {
+    const r = await fetch(BASE + "avatar", { method: "POST", headers: { "X-Requested-With": "portal" }, body: f });
+    const j = await r.json().catch(() => ({})); if (!r.ok || !j.ok) throw new Error(j.error || "上傳失敗");
+    PR = { ...j.profile }; D.profile = j.profile; renderProfile(); render(); toast("頭像已更新", "ok");
+  } catch (err) { toast(err.message, "alert"); }
+});
+
+// ---------- bug reports ----------
+var BUGS = null, BUGF = null;
+async function loadBugs() { if (LOCKED) return; try { const r = await fetch(BASE + "bugs", { cache: "no-store" }); if (r.ok) { BUGS = await r.json(); renderMyBugs(); } } catch {} }
+function renderMyBugs() {
+  const el = $("#myBugs"); if (!el || !BUGS) return;
+  el.innerHTML = BUGS.items.length ? `<div class="small muted" style="margin:10px 0 2px">我的回報</div>` + BUGS.items.slice(0, 8).map(b => `<div class="mybug">
+    <div style="display:flex;gap:8px;align-items:flex-start"><div style="flex:1;min-width:0"><div class="t">${esc(b.title)}${b.unread ? '<span class="newdot" title="管理員回覆了"></span>' : ""}</div>
+      <div class="s">${new Date(b.at * 1000).toLocaleDateString("zh-TW")}・${esc(BUGS.areas[b.area])}${b.shots ? `・${b.shots} 張截圖` : ""}</div></div>
+      <span class="bst ${b.status}">${esc(BUGS.statuses[b.status])}</span></div>
+    ${b.thread.map(m => `<div class="bmsg ${m.from === "owner" ? "owner" : "me"}"><div class="w">${m.from === "owner" ? "管理員" : "我"}・${new Date(m.t * 1000).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>${esc(m.text)}</div>`).join("")}
+    ${["fixed", "wontfix", "dup"].includes(b.status) ? `<details><summary>還是有問題？</summary><div class="inline" style="margin-top:6px"><input type="text" data-bugreply="${b.id}" placeholder="補充說明" style="font-size:16px"><button class="btn sm" data-bugsend="${b.id}">送出</button></div></details>`
+      : `<div class="inline" style="margin-top:6px"><input type="text" data-bugreply="${b.id}" placeholder="補充說明（可以不填）" style="font-size:16px"><button class="btn sm" data-bugsend="${b.id}">送出</button></div>`}</div>`).join("") : "";
+}
+function openBugForm() {
+  BUGF = { area: "page", severity: "minor", shots: [] };
+  const A = BUGS ? BUGS.areas : { cloud: "雲端硬碟", net: "上網／連線", sr: "Shadowrocket", page: "專屬網頁", other: "其他" };
+  const V = BUGS ? BUGS.severities : { minor: "小問題", annoying: "有點影響", blocker: "完全不能用" };
+  $("#bugForm").innerHTML = `<div class="bugf">
+    <div class="sect"><div class="st">哪裡有問題？</div><div class="chipbtns" data-bg="area">${Object.entries(A).filter(([k]) => k !== "sr" || (D && D.shadowrocket.on)).map(([k, l]) => `<button class="chipbtn ${k === BUGF.area ? "on" : ""}" data-v="${k}">${esc(l)}</button>`).join("")}</div></div>
+    <div class="sect"><div class="st">有多嚴重？</div><div class="chipbtns" data-bg="severity">${Object.entries(V).map(([k, l]) => `<button class="chipbtn ${k === BUGF.severity ? "on" : ""}" data-v="${k}">${esc(l)}</button>`).join("")}</div></div>
+    <div class="sect"><div class="st">用一句話說發生什麼事</div><input type="text" id="bugTitleIn" maxlength="80" placeholder="例如：上傳照片一直失敗"></div>
+    <div class="sect"><div class="st">詳細說明（可以不填）</div><textarea id="bugDescIn" maxlength="3000" placeholder="你做了什麼、看到什麼、本來以為會怎樣"></textarea></div>
+    <div class="sect"><div class="st">截圖（最多 3 張，可以不附）</div><label class="btn sm">${icon("camera")}選擇截圖<input type="file" accept="image/*" multiple hidden id="bugShotIn"></label><div class="shotprev" id="bugShotPrev"></div></div>
+    <div class="sect"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="bugDevIn" checked> 附上手機型號和瀏覽器資訊（方便找原因）</label></div>
+    <div class="btns" style="padding:10px 0 4px"><button class="btn primary" id="bugSend">${icon("send")}送出回報</button></div></div>`;
+  $("#bugSheet").hidden = false;
+}
+document.addEventListener("click", async e => {
+  const t = e.target;
+  if (t.closest("#bugNew")) return openBugForm();
+  if (t.closest("#bugCancel") || t.id === "bugSheet") { $("#bugSheet").hidden = true; return; }
+  const c = t.closest("#bugForm .chipbtn"); if (c) { const g = c.parentElement.dataset.bg; BUGF[g] = c.dataset.v; c.parentElement.querySelectorAll(".chipbtn").forEach(x => x.classList.toggle("on", x === c)); return; }
+  if (t.closest("#bugSend")) {
+    const b = t.closest("#bugSend"); b.disabled = true;
+    try {
+      const dev = $("#bugDevIn").checked ? { ua: navigator.userAgent, screen: `${screen.width}×${screen.height} @${devicePixelRatio}x`, page: location.pathname.replace(/\/p\/[0-9a-f]+/, "/p/…"), lang: navigator.language } : null;
+      const j = await post("bug", { title: $("#bugTitleIn").value, desc: $("#bugDescIn").value, area: BUGF.area, severity: BUGF.severity, device: dev });
+      for (const f of BUGF.shots) {
+        const r = await fetch(BASE + "bug/" + j.id + "/shot", { method: "POST", headers: { "X-Requested-With": "portal" }, body: f });
+        if (!r.ok) { const x = await r.json().catch(() => ({})); toast("截圖：" + (x.error || r.status), "alert"); }
+      }
+      $("#bugSheet").hidden = true; toast("已送出，管理員會收到通知", "ok"); loadBugs();
+    } catch (err) { toast(err.message, "alert"); }
+    b.disabled = false; return;
+  }
+  const sd = t.closest("[data-bugsend]"); if (sd) { const inp = document.querySelector(`[data-bugreply="${sd.dataset.bugsend}"]`);
+    try { await post("bug/" + sd.dataset.bugsend + "/reply", { text: inp.value }); toast("已送出", "ok"); loadBugs(); } catch (err) { toast(err.message, "alert"); } }
+});
+document.addEventListener("change", e => {
+  if (e.target.id !== "bugShotIn") return;
+  BUGF.shots = [...e.target.files].slice(0, 3);
+  if (e.target.files.length > 3) toast("最多 3 張，只取前 3 張", "alert");
+  // data: URLs (the page's CSP doesn't allow blob: images)
+  $("#bugShotPrev").innerHTML = "";
+  BUGF.shots.forEach(f => { const r = new FileReader(); r.onload = () => { const i = new Image(); i.alt = ""; i.src = r.result; $("#bugShotPrev").appendChild(i); }; r.readAsDataURL(f); });
+});
 
 // ---------- messages ----------
 const MSGT = { extend: "延長使用期限", quota: "加大雲端容量", time: "增加每日時數", help: "需要幫忙", other: "其他" };
 var MYMSG = null;
-async function loadMsgs() { try { const r = await fetch(BASE + "messages", { cache: "no-store" }); if (r.ok) { MYMSG = (await r.json()).items; renderMsgs(); } } catch {} }
+async function loadMsgs() { if (LOCKED) return; try { const r = await fetch(BASE + "messages", { cache: "no-store" }); if (r.ok) { MYMSG = (await r.json()).items; renderMsgs(); } } catch {} }
 function renderMsgs() {
   const el = $("#myMsgs"); if (!el || !MYMSG) return;
   el.innerHTML = MYMSG.length ? `<div class="small muted" style="margin:14px 0 2px">之前的留言</div>` + MYMSG.slice(0, 5).map(m => `<div class="row" style="align-items:flex-start">
@@ -367,7 +564,7 @@ async function speedTest() {
   b.disabled = false;
 }
 
-load(); loadMsgs(); setInterval(() => { if (!document.hidden) { load(); loadMsgs(); } }, 60000);
+load().then(() => { loadMsgs(); loadBugs(); }); setInterval(() => { if (!document.hidden) { load(); loadMsgs(); loadBugs(); } }, 60000);
 </script>
 </body>
 </html>

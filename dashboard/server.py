@@ -24,6 +24,8 @@ import notify
 import macstats
 import security
 import settings
+import portalauth
+import bugs
 import time
 import urllib.error
 import urllib.parse
@@ -427,6 +429,38 @@ def osa_str(s):
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+# Media keys (⏯ ⏭ ⏮) reach whatever is playing, including web players in Chrome (Spotify Web / installed web app)
+MEDIA_KEY_JXA = """ObjC.import('AppKit'); ObjC.import('CoreGraphics');
+function run(argv) {
+  const k = {playpause: 16, next: 17, prev: 18}[argv[0]];
+  for (const down of [true, false]) {
+    const ev = $.NSEvent.otherEventWithTypeLocationModifierFlagsTimestampWindowNumberContextSubtypeData1Data2(
+      14, $.NSMakePoint(0, 0), down ? 0xa00 : 0xb00, 0, 0, null, 8, (k << 16) | ((down ? 0xa : 0xb) << 8), -1);
+    $.CGEventPost(0, ev.CGEvent);
+  }
+}"""
+
+
+def chrome_media():
+    """Spotify playing in Chrome (a tab or the installed web app): its title becomes "Song • Artist"."""
+    if run(["pgrep", "-x", "Google Chrome"])[0] != 0:
+        return None
+    code, out, _ = osa('with timeout of 3 seconds\ntell application "Google Chrome"\nset out to ""\n'
+                       'repeat with w in windows\nrepeat with t in tabs of w\n'
+                       'if URL of t contains "open.spotify.com" then set out to out & (title of t) & "␞"\n'
+                       'end repeat\nend repeat\nreturn out\nend tell\nend timeout', timeout=5)
+    if code != 0:
+        return None
+    titles = [t for t in out.strip().split("␞") if t]
+    if not titles:
+        return None
+    for t in titles:
+        if " • " in t:
+            name, artist = t.split(" • ", 1)
+            return {"app": "Spotify（網頁版）", "state": "playing", "track": name.strip(), "artist": artist.strip(), "web": True}
+    return {"app": "Spotify（網頁版）", "state": "stopped", "track": "", "artist": "", "web": True}
+
+
 def media_now():
     for app in ("Spotify", "Music"):
         if run(["pgrep", "-x", app])[0] != 0:
@@ -437,7 +471,7 @@ def media_now():
             state, name, artist = (out.strip().split("␟") + ["", "", ""])[:3]
             return {"app": app, "state": state, "track": name, "artist": artist}
         return {"app": app, "state": "stopped", "track": "", "artist": ""}
-    return None
+    return chrome_media()
 
 
 def get_volume():
@@ -491,6 +525,10 @@ def action(name, arg, who):
         now = media_now()
         if not cmd or not now:
             return {"ok": False, "error": "沒有 Spotify / 音樂 App 在執行"}
+        if now.get("web"):  # web player: press the Mac's media key
+            code, _, err = run(["osascript", "-l", "JavaScript", "-e", MEDIA_KEY_JXA, arg.get("cmd")], timeout=5)
+            log_event(who, f"{now['app']}：{arg.get('cmd')}")
+            return {"ok": code == 0, "error": err.strip()}
         code, _, err = osa(f'tell application "{now["app"]}" to {cmd}')
         log_event(who, f"{now['app']}：{arg.get('cmd')}")
         return {"ok": code == 0, "error": err.strip()}
@@ -581,6 +619,48 @@ def action(name, arg, who):
         st = backup_state()
         st["enabled"] = bool(arg.get("on"))
         backup_save(st)
+        return {"ok": True}
+    if name == "bug_update":
+        try:
+            r = bugs.owner_update(str(arg.get("id")), arg.get("status"), arg.get("priority"), arg.get("note"), arg.get("reply"))
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+        if arg.get("reply"):
+            log_event(who, "回覆了問題回報")
+        return r
+    if name == "bug_delete":
+        try:
+            return bugs.owner_delete(str(arg.get("id")))
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+    if name in ("gh_comment", "gh_state", "gh_label", "gh_refresh"):
+        try:
+            if name == "gh_comment":
+                r = bugs.gh_comment(arg.get("number"), arg.get("text"))
+            elif name == "gh_state":
+                r = bugs.gh_set_state(arg.get("number"), arg.get("state"))
+            elif name == "gh_label":
+                r = bugs.gh_label(arg.get("number"), str(arg.get("label")), bool(arg.get("on")))
+            else:
+                bugs.gh_sync()
+                r = {"ok": True}
+        except (ValueError, RuntimeError, subprocess.SubprocessError) as e:
+            return {"ok": False, "error": f"GitHub：{e}"}
+        log_event(who, f"GitHub issue #{arg.get('number')}：{name}")
+        return r
+    if name == "portal_pw_set":
+        login = str(arg.get("login", ""))
+        if not any(x["login"] == login for x in load_members()["people"]):
+            return {"ok": False, "error": "找不到這個成員"}
+        try:
+            portalauth.set_password(login, arg.get("password"))
+        except ValueError as e:
+            return {"ok": False, "error": str(e)}
+        log_event(who, f"設定 {login} 的專屬網頁密碼（已登入的裝置要重新輸入）")
+        return {"ok": True}
+    if name == "portal_pw_clear":
+        portalauth.clear_password(str(arg.get("login", "")))
+        log_event(who, f"取消 {arg.get('login')} 的專屬網頁密碼")
         return {"ok": True}
     if name == "sec_unban":
         security.unban(str(arg.get("ip")))
@@ -1068,6 +1148,13 @@ def policy_scheduler():
                 apply_xray("排程")
             usage_tick()
             monitor_tick()
+            if n % 9 == 1:  # keep the slow Tailscale policy read warm so the security page opens instantly
+                try:
+                    _cache["sec-policy"] = (time.time(), get_policy()[0])
+                except Exception:
+                    pass
+            if n % 10 == 1:
+                bugs.gh_sync(on_new=lambda i: notify.send("bug", "GitHub 有新的問題回報", f"#{i['number']} {i['title']}（{i['author']}）", "/#members"))
             macstats.record()
             _policy_state["last_error"] = None
         except Exception as e:
@@ -1102,6 +1189,11 @@ def members_overview():
     for p in out["people"]:
         p["active"], p["status"] = person_active(p)
         p["portal_url"] = portal_url(p["portal"])
+        try:  # never let a profile/password file problem hide the whole member list
+            p["portal_pw"] = portalauth.has_password(p["login"])
+            p["profile"] = portalauth.profile(p["login"])
+        except Exception:
+            p["portal_pw"], p["profile"] = False, {}
     if not kick_status()["has_api"]:
         out["api"] = "none"
         return out
@@ -1487,7 +1579,7 @@ def security_checks():
     out.append(_chk("lock", "控制台密碼／Face ID", "ok" if rec.get("pin") else "warn",
                     ("已設定" + ("，有 Face ID" if rec.get("passkeys") else "")) if rec.get("pin") else "還沒設定"))
     bad_perm = []
-    for f in [os.path.join(HERE, x) for x in ("members.json", "secrets.json", "notify.json", "shares.json", "security-events.json", "security-bans.json")] + \
+    for f in [os.path.join(HERE, x) for x in ("members.json", "secrets.json", "notify.json", "shares.json", "security-events.json", "security-bans.json", "portal-auth.json", "profiles.json")] + \
              [XRAY_CONFIG, os.path.join(os.path.dirname(HERE), "credentials.txt"), os.path.join(os.path.dirname(HERE), "AdGuardHome", "AdGuardHome.yaml")]:
         if os.path.exists(f) and os.stat(f).st_mode & 0o077:
             bad_perm.append(os.path.basename(f))
@@ -1734,6 +1826,34 @@ class PortalHandler(BaseHTTPRequestHandler):
         security.record(kind, ip, urllib.parse.urlparse(self.path).path[:80])
         self.send_body("找不到頁面".encode(), "text/plain; charset=utf-8", 404)
 
+    def _cookie(self, name):
+        for part in (self.headers.get("Cookie") or "").split(";"):
+            k, _, v = part.strip().partition("=")
+            if k == name:
+                return v
+        return None
+
+    def portal_cookie_name(self, p):
+        return "pp_" + p["portal"][:8]
+
+    def portal_locked(self, p):
+        """True when this member has a password and this browser hasn't entered it yet."""
+        return portalauth.has_password(p["login"]) and not portalauth.session_ok(p["login"], self._cookie(self.portal_cookie_name(p)))
+
+    def session_cookie(self, p, clear=False):
+        val = "" if clear else portalauth.session_value(p["login"])
+        age = 0 if clear else portalauth.SESSION_DAYS * 86400
+        return f"{self.portal_cookie_name(p)}={val}; Path={PORTAL_PREFIX}/{p['portal']}/; Secure; HttpOnly; SameSite=Strict; Max-Age={age}"
+
+    def send_json_cookie(self, obj, cookie, code=200):
+        body = json.dumps(obj, ensure_ascii=False).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Set-Cookie", cookie)
+        self.end_headers()
+        self.wfile.write(body)
+
     def gate(self):
         """Banned addresses and address-level rate limit. Returns False when the request was answered."""
         self.connection.settimeout(120)  # headers are in; give slow phones time for big downloads / uploads
@@ -1767,7 +1887,20 @@ class PortalHandler(BaseHTTPRequestHandler):
             self.not_found()
             return
         rest = parts[1:]
+        open_routes = ([], ["icon.png"], ["qrcode.js"], ["drive.js"], ["lockinfo"], ["avatar.jpg"])
+        if rest not in open_routes and self.portal_locked(p):
+            return self.send_json({"ok": False, "locked": True, "error": "請先輸入密碼"}, 401)
         try:
+            if rest == ["lockinfo"]:
+                pr = portalauth.profile(p["login"])
+                return self.send_json({"ok": True, "locked": self.portal_locked(p), "name": pr["nickname"] or p["login"].split("@")[0],
+                                       "emoji": pr["emoji"], "color": pr["color"], "photo": pr["photo"], "v": pr["v"]})
+            if rest == ["avatar.jpg"]:
+                ap = portalauth.avatar_path(p["login"])
+                if not os.path.exists(ap):
+                    return self.send_body(b"", "image/jpeg", 404)
+                with open(ap, "rb") as f:
+                    return self.send_body(f.read(), "image/jpeg")
             if not rest:
                 with open(os.path.join(HERE, "portal.html"), encoding="utf-8") as f:
                     page = f.read()
@@ -1775,8 +1908,22 @@ class PortalHandler(BaseHTTPRequestHandler):
                     idx = f.read()
                 style = idx[idx.index("<style>") + 7:idx.index("</style>")]
                 self.send_body(page.replace("/*SHARED_STYLE*/", style).encode(), "text/html; charset=utf-8")
+            elif rest == ["bugs"]:
+                items = bugs.mine(p["login"])
+                bugs.mark_seen(p["login"])
+                self.send_json({"ok": True, "items": items, "areas": bugs.AREA, "severities": bugs.SEVERITY, "statuses": bugs.STATUS})
+            elif len(rest) == 4 and rest[0] == "bug" and rest[2] == "shot":
+                b = next((x for x in bugs.all_member_bugs() if x["id"] == rest[1] and x["by"] == p["login"]), None)
+                sp = bugs.shot_path(rest[1], rest[3]) if b else None
+                if not sp:
+                    return self.send_body(b"", "image/jpeg", 404)
+                with open(sp, "rb") as f:
+                    self.send_body(f.read(), "image/jpeg")
             elif rest == ["me"]:
                 d = portal_me(p)
+                d["profile"] = portalauth.profile(p["login"])
+                d["has_password"] = portalauth.has_password(p["login"])
+                d["backup_key"] = portalauth.backup_key(p["login"]) if d["drive"]["on"] else None
                 d["client_ip"] = ip
                 d["via_tailnet"] = ip.startswith("100.") or ip.startswith("fd7a:115c:a1e0")
                 self.send_body(json.dumps(d, ensure_ascii=False).encode(), "application/json; charset=utf-8")
@@ -1842,6 +1989,72 @@ class PortalHandler(BaseHTTPRequestHandler):
                 security.record("bad_token", self.client_ip(), "POST " + path[:60])
             self.send_body(b"forbidden", "text/plain", 403)
             return
+        rest = parts[1:]
+        qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        if rest == ["login"]:
+            body = self.read_json()
+            err = portalauth.check_password(p["login"], body.get("password"))
+            if err:
+                security.record("portal_pw", self.client_ip(), p["login"])
+                return self.send_json({"ok": False, "error": err}, 403)
+            return self.send_json_cookie({"ok": True}, self.session_cookie(p))
+        if rest == ["logout"]:
+            return self.send_json_cookie({"ok": True}, self.session_cookie(p, clear=True))
+        shortcut_upload = rest == ["drive", "upload"] and portalauth.backup_key_ok(p["login"], (qs.get("key") or [""])[0])
+        if self.portal_locked(p) and not shortcut_upload:
+            self.close_connection = True
+            return self.send_json({"ok": False, "locked": True, "error": "請先輸入密碼"}, 401)
+        if rest == ["password"]:
+            body = self.read_json()
+            if portalauth.has_password(p["login"]):
+                err = portalauth.check_password(p["login"], body.get("current"))
+                if err:
+                    security.record("portal_pw", self.client_ip(), p["login"] + "（改密碼）")
+                    return self.send_json({"ok": False, "error": err}, 403)
+            try:
+                portalauth.set_password(p["login"], body.get("new"))
+            except ValueError as e:
+                return self.send_json({"ok": False, "error": str(e)}, 400)
+            log_event(p["login"], "更改自己的專屬網頁密碼")
+            return self.send_json_cookie({"ok": True}, self.session_cookie(p))
+        if rest == ["bug"]:
+            try:
+                b = bugs.report(p["login"], self.read_json())
+            except ValueError as e:
+                return self.send_json({"ok": False, "error": str(e)}, 400)
+            log_event(p["login"], f"回報問題：{b['title']}")
+            notify.send("bug", f"{p['login']} 回報了問題", f"{bugs.SEVERITY[b['severity']]}・{b['title']}", "/#members", urgent=b["severity"] == "blocker")
+            return self.send_json({"ok": True, "id": b["id"]})
+        if len(rest) == 3 and rest[0] == "bug" and rest[2] in ("shot", "reply"):
+            try:
+                if rest[2] == "shot":
+                    n = int(self.headers.get("Content-Length", 0) or 0)
+                    if n > 8 << 20:
+                        self.close_connection = True
+                        return self.send_json({"ok": False, "error": "截圖太大（最多 8 MB）"}, 413)
+                    return self.send_json(bugs.add_shot(p["login"], rest[1], self.rfile.read(n)))
+                r = bugs.member_reply(p["login"], rest[1], self.read_json().get("text"))
+                notify.send("bug", f"{p['login']} 補充了問題回報", "打開控制台看看", "/#members")
+                return self.send_json(r)
+            except ValueError as e:
+                return self.send_json({"ok": False, "error": str(e)}, 400)
+        if rest == ["profile"]:
+            body = self.read_json()
+            try:
+                pr = portalauth.set_profile(p["login"], body.get("nickname"), body.get("emoji"), body.get("color"), bool(body.get("remove_photo")))
+            except ValueError as e:
+                return self.send_json({"ok": False, "error": str(e)}, 400)
+            return self.send_json({"ok": True, "profile": pr})
+        if rest == ["avatar"]:
+            n = int(self.headers.get("Content-Length", 0) or 0)
+            if n > 8 << 20:
+                self.close_connection = True
+                return self.send_json({"ok": False, "error": "照片太大（最多 8 MB）"}, 413)
+            try:
+                pr = portalauth.save_photo(p["login"], self.rfile.read(n))
+            except ValueError as e:
+                return self.send_json({"ok": False, "error": str(e)}, 400)
+            return self.send_json({"ok": True, "profile": pr})
         if parts[1:] == ["message"]:
             try:
                 body = self.read_json()
@@ -1856,7 +2069,7 @@ class PortalHandler(BaseHTTPRequestHandler):
         if parts[2] == "upload" and not p["drive"]["backup"]:
             # automatic backup = the Shortcuts flags, or any upload that doesn't come from a browser page (no Origin / Sec-Fetch-Site)
             qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-            if qs.get("mkdir") == ["1"] or qs.get("skip_existing") == ["1"] or not (origin or site):
+            if qs.get("mkdir") == ["1"] or qs.get("skip_existing") == ["1"] or not (origin or site) or shortcut_upload:
                 self.close_connection = True
                 security.record("backup_denied", self.client_ip(), p["login"])
                 return self.send_json({"ok": False, "error": "管理員沒有開放你使用照片自動備份"}, 403)
@@ -2825,6 +3038,48 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     self.send_json({"ok": True, **security.summary(), "checks": cached("sec-checks", 60, security_checks),
                                     "selftest": {k: _selftest[k] for k in ("running", "at", "results", "progress")}})
+            elif u.path == "/api/bugs":
+                if self.role != "owner":
+                    self.send_json({"ok": False, "error": "forbidden"}, 403)
+                else:
+                    if q.get("refresh", [""])[0] == "1":
+                        bugs._ghc["at"] = 0
+                    members = {p["login"]: portalauth.profile(p["login"]) for p in load_members()["people"]}
+                    self.send_json({"ok": True, "member": bugs.all_member_bugs(), "github": bugs.gh_list(), "profiles": members,
+                                    "statuses": bugs.STATUS, "priorities": bugs.PRIORITY, "areas": bugs.AREA, "severities": bugs.SEVERITY})
+            elif u.path == "/api/bug_issue":
+                if self.role != "owner":
+                    self.send_json({"ok": False, "error": "forbidden"}, 403)
+                else:
+                    try:
+                        self.send_json({"ok": True, **bugs.gh_issue(int(q.get("n", ["0"])[0]))})
+                    except Exception as e:
+                        self.send_json({"ok": False, "error": f"讀不到 GitHub：{e}"}, 502)
+            elif u.path == "/api/bugshot":
+                sp = bugs.shot_path(q.get("id", [""])[0], q.get("n", [""])[0])
+                if self.role != "owner" or not sp:
+                    self.send_error(404)
+                else:
+                    with open(sp, "rb") as f:
+                        body = f.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/jpeg")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+            elif u.path == "/api/avatar":
+                ap = portalauth.avatar_path(q.get("login", [""])[0])
+                if self.role != "owner" or not os.path.exists(ap):
+                    self.send_error(404)
+                else:
+                    with open(ap, "rb") as f:
+                        body = f.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/jpeg")
+                    self.send_header("Cache-Control", "private, max-age=86400")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
             elif u.path == "/api/arrival":
                 self.send_json({"ok": True, "prefs": arrival_prefs()} if self.role == "owner" else {"ok": False})
             elif u.path == "/api/speed/down":
@@ -2990,6 +3245,7 @@ if __name__ == "__main__":
         except Exception:
             pass
     threading.Thread(target=warm, daemon=True).start()
+    threading.Thread(target=lambda: safe(lambda: cached("sec-checks", 60, security_checks)), daemon=True).start()
     security.configure(on_ban=lambda ip, why: notify.send("security", "自動封鎖了一個可疑位址", f"{ip}：{why}，封鎖 24 小時", "/#settings", urgent=True))
     threading.Thread(target=BoundedServer((PORTAL_HOST, PORTAL_PORT), PortalHandler, limit=96).serve_forever, daemon=True).start()
     try:

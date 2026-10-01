@@ -712,6 +712,27 @@ details[open] > summary::before { transform: rotate(90deg); }
 
 /* installs without the Shadowrocket feature (config.json "shadowrocket": false) */
 html.no-sr .feat-sr { display: none !important; }
+
+/* ===== bug tracker ===== */
+.lbl-short { display: none; }
+@media (max-width: 400px) { .lbl-long { display: none; } .lbl-short { display: inline; } }
+.bugrow { display: flex; gap: 12px; align-items: flex-start; width: 100%; padding: 12px 0; border: 0; border-top: 1px solid var(--grid); background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.bugrow:first-child { border-top: 0; }
+.bugrow .grow { min-width: 0; flex: 1; }
+.bugrow .t { font-weight: 650; overflow-wrap: anywhere; }
+.bugrow .s { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.bst { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--fill); white-space: nowrap; }
+.bst.new { color: #fff; background: var(--accent); } .bst.doing { color: #fff; background: #e08a00; } .bst.fixed { color: #fff; background: var(--good); }
+.bst.wontfix, .bst.dup, .bst.closed { color: var(--text-2); }
+.bug-desc { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.6; background: var(--fill); border-radius: 12px; padding: 10px 12px; }
+.bug-shots { display: flex; gap: 8px; flex-wrap: wrap; }
+.bug-shots img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; cursor: zoom-in; background: var(--fill); }
+.bug-msg { padding: 8px 12px; border-radius: 14px; margin: 6px 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 92%; }
+.bug-msg.them { background: var(--fill); } .bug-msg.me { background: color-mix(in srgb, var(--accent) 16%, transparent); margin-left: auto; }
+.bug-msg .w { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.bug-sheet textarea { width: 100%; min-height: 70px; font: inherit; font-size: 16px; resize: vertical; }
+.zoomimg { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.85); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.zoomimg img { max-width: 100%; max-height: 100%; border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -865,7 +886,7 @@ html.no-sr .feat-sr { display: none !important; }
 
 <!-- 成員 -->
 <section data-tab="members">
-  <div class="seg" data-seg="mem"><button data-pane="mem-people" class="on">成員</button><button data-pane="mem-sr" class="feat-sr">Shadowrocket</button><button data-pane="mem-msgs">留言<span class="segcount" id="msgCount"></span></button></div>
+  <div class="seg" data-seg="mem"><button data-pane="mem-people" class="on">成員</button><button data-pane="mem-sr" class="feat-sr"><span class="lbl-long">Shadowrocket</span><span class="lbl-short">SR</span></button><button data-pane="mem-msgs">留言<span class="segcount" id="msgCount"></span></button><button data-pane="mem-bugs">回報<span class="segcount" id="bugCount"></span></button></div>
   <div class="pane stack" id="mem-people">
     <div id="memBanner"></div>
     <div class="card list">
@@ -880,6 +901,12 @@ html.no-sr .feat-sr { display: none !important; }
     <button class="btn primary wide" id="memSave"><i data-ic="save"></i>儲存並套用</button>
     <details class="card summary"><summary class="sumhead">權限總覽</summary><div id="memSummary"></div></details>
     <div class="section-title right"><button class="btn sm" id="memReload"><i data-ic="refresh"></i>重新整理</button></div>
+  </div>
+  <div class="pane stack" id="mem-bugs" hidden>
+    <div class="card"><div class="chipbtns" id="bugFilter"><button class="chipbtn on" data-bf="open">待處理</button><button class="chipbtn" data-bf="done">已結束</button><button class="chipbtn" data-bf="all">全部</button></div>
+      <div class="chipbtns" id="bugSrc" style="margin-top:8px"><button class="chipbtn on" data-bs="all">全部來源</button><button class="chipbtn" data-bs="m">家人</button><button class="chipbtn" data-bs="g">GitHub</button></div></div>
+    <div class="card list" id="bugList"><div class="skel"><i></i><i></i><i></i></div></div>
+    <div class="small muted pad" id="bugFoot"></div>
   </div>
   <div class="pane stack" id="mem-msgs" hidden>
     <div class="card list" id="msgList"><div class="skel"><i></i><i></i><i></i></div></div>
@@ -964,6 +991,12 @@ html.no-sr .feat-sr { display: none !important; }
 
 </main>
 <div class="toast" id="toast"></div>
+<div class="sheet" id="bugSheet" hidden>
+  <div class="sheet-box">
+    <div class="sheet-head"><span id="bugBadge"></span><div class="t" id="bugTitle">問題回報</div><button class="done" id="bugDone">完成</button></div>
+    <div class="sheet-body" id="bugBody"></div>
+  </div>
+</div>
 <div class="sheet" id="notifSheet" hidden>
   <div class="sheet-box">
     <div class="sheet-head"><span class="badge devbadge" style="--c:#ff9f0a"><i data-ic="bell"></i></span><div class="t">通知</div><button class="done" id="notifDone">完成</button></div>
@@ -1234,7 +1267,7 @@ function show(tab) {
   if (location.hash.slice(1) !== tab) history.replaceState(null, "", "#" + tab);
   if (tab === "cloud") { initDrive(); loadShares(); loadBackup(); }
   if (tab === "remote") setTimeout(loadMedia, 0);
-  if (tab === "members") { loadMembers(); loadProxy(); loadMsgs(); }
+  if (tab === "members") { loadMembers(); loadProxy(); loadMsgs(); loadBugs(); }
   if (tab === "settings") { loadNotify(); api("/api/arrival").then(d => { ARR = d.prefs || {}; refresh(true); }).catch(() => {}); }
   onPane(tab);
   window.scrollTo(0, 0);
@@ -1741,6 +1774,12 @@ function statusPill(p) {
   if (memDirty) return `<span class="pill">未儲存</span>`;
   return p.active ? `<span class="pill good">● ${esc(p.status)}</span>` : `<span class="pill bad">● ${esc(p.status)}</span>`;
 }
+function memAvatar(p, cls = "devbadge") {
+  const pr = p.profile || {};
+  if (pr.photo) return `<span class="badge ${cls}" style="--c:${esc(pr.color || "#5e5ce6")};padding:0;overflow:hidden"><img src="/api/avatar?login=${encodeURIComponent(p.login)}&v=${pr.v}" alt="" style="width:100%;height:100%;object-fit:cover"></span>`;
+  if (pr.emoji) return `<span class="badge ${cls}" style="--c:${esc(pr.color || "#5e5ce6")};font-size:20px">${esc(pr.emoji)}</span>`;
+  return badge(p.login.includes("@") ? "user" : "rocket", p.active === false ? "gray" : p.login.includes("@") ? "purple" : "indigo", cls);
+}
 function personSummary(p) {
   const d = M, out = [];
   if (!p.enabled) return "已停用";
@@ -1752,6 +1791,8 @@ function personSummary(p) {
   if (p.filter.on) out.push("有上網限制");
   if (p.expires) out.push("到 " + p.expires);
   if (p.schedule.on) out.push("限時段");
+  if (p.portal_pw) out.push("網頁有密碼");
+  if (p.profile && p.profile.nickname) out.unshift("「" + p.profile.nickname + "」");
   if (p.daily_min) out.push(`每天 ${p.daily_min >= 60 ? p.daily_min / 60 + " 小時" : p.daily_min + " 分鐘"}`);
   if (p.sr && p.sr.on && !(S && S.features && S.features.shadowrocket === false)) out.push("Shadowrocket");
   if (p.drive && p.drive.on) out.push("雲端 " + (p.drive.quota_gb ? p.drive.quota_gb + " GB" : "不限") + (p.drive.backup === false ? "・不能自動備份" : ""));
@@ -1782,6 +1823,11 @@ function personBody(p, i) {
       <div class="sect"><div class="st">${icon("globe")} 客戶端網址</div>
         ${p.portal_url ? `<div class="btns"><button class="btn sm" data-plink="${i}">${icon("clipboard")}複製</button><button class="btn sm" data-pqr="${i}">${icon("qr")}QR</button><a class="btn sm" href="${esc(p.portal_url)}" target="_blank" rel="noopener">${icon("globe")}預覽</a><button class="btn sm danger" data-prot="${i}">${icon("refresh")}換網址</button></div>
         <div class="small muted" style="margin-top:6px">他的專屬頁面：看自己的狀態、Shadowrocket、雲端。只能私下傳給本人。</div>` : `<div class="small muted">儲存後會產生</div>`}</div>
+      ${p.portal_url ? `<div class="sect"><div class="st">${icon("lock")} 專屬網頁密碼<span class="sp"></span>${p.portal_pw ? '<span class="pill good">已設定</span>' : '<span class="pill">沒有密碼</span>'}</div>
+        <div class="inline"><input type="text" id="ppw-${i}" placeholder="${p.portal_pw ? "設新密碼" : "設一個密碼（至少 4 個字）"}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="64">
+          <button class="btn sm primary" data-ppwset="${i}">設定</button></div>
+        ${p.portal_pw ? `<div class="btns" style="margin-top:8px"><button class="btn sm danger" data-ppwclr="${i}">取消密碼</button></div>` : ""}
+        <div class="small muted" style="margin-top:6px">設定後，網址加上密碼才打得開；他的手機會記住 30 天。重設密碼會讓所有已登入的裝置登出。他也可以在自己的網頁點頭像改密碼。</div></div>` : ""}
       <div class="sect" style="text-align:center"><button class="btn sm danger" data-memdel="${i}">${icon("trash")}從名單移除</button></div>
     </div>
 
@@ -1842,7 +1888,7 @@ function renderMembers() {
   if (memDirty) b += `<div class="banner">${icon("alert")} 有變更還沒儲存</div>`;
   $("#memBanner").innerHTML = b;
   $("#memList").innerHTML = d.people.map((p, i) => `<button class="mrow" data-memopen="${i}">
-    ${badge(p.login.includes("@") ? "user" : "rocket", p.active === false ? "gray" : p.login.includes("@") ? "purple" : "indigo", "devbadge")}
+    ${memAvatar(p)}
     <span class="grow"><span class="t"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.login)}</span>${statusPill(p)}</span><span class="s" style="display:block">${esc(personSummary(p))}</span></span>
     <span class="chev">›</span></button>`).join("");
   const yes = (who, what) => `<div class="row"><span>${who}</span><div class="grow">${what}</div></div>`;
@@ -1856,7 +1902,7 @@ function renderSheet() {
   if (i < 0) { $("#memSheet").hidden = true; return; }
   const p = M.people[i], ts = p.login.includes("@"), body = $("#sheetBody"), top = body.scrollTop;
   $("#sheetTitle").textContent = p.login;
-  $("#sheetBadge").innerHTML = badge(ts ? "user" : "rocket", ts ? "purple" : "indigo", "devbadge");
+  $("#sheetBadge").innerHTML = memAvatar(p);
   body.classList.toggle("sronly", !ts);
   $('#sheetSeg [data-sg="panel"]').hidden = !ts;
   if (!ts && body.dataset.show === "panel") body.dataset.show = "basic";
@@ -1898,6 +1944,11 @@ const toggleIn = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : [...ar
 $("#memList").onclick = e => { const r = e.target.closest("[data-memopen]"); if (!r) return; memOpen = M.people[+r.dataset.memopen].login; $("#sheetBody").dataset.show = "basic"; renderSheet(); };
 $("#sheetBody").onclick = async e => {
   const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.ppwset !== undefined) { const q = M.people[+t.dataset.ppwset], inp = $("#ppw-" + t.dataset.ppwset);
+    try { await act("portal_pw_set", { login: q.login, password: inp.value }, `已設定 ${q.login} 的密碼，記得告訴他`); q.portal_pw = true; inp.value = ""; renderSheet(); } catch {} return; }
+  if (t.dataset.ppwclr !== undefined) { const q = M.people[+t.dataset.ppwclr];
+    if (t.dataset.confirm !== "1") { t.dataset.confirm = "1"; t.textContent = "確定取消密碼？"; return; }
+    try { await act("portal_pw_clear", { login: q.login }, "已取消密碼"); q.portal_pw = false; renderSheet(); } catch {} return; }
   if (t.dataset.lockreset !== undefined) { const q = M.people[+t.dataset.lockreset];
     try { await lockPost("reset-member", { login: q.login }); toast("已重設 " + q.login + " 的控制台密碼", "ok"); } catch (err) { toast(err.message, "alert"); } return; }
   const p = M.people[+t.dataset.mem]; if (!p) return;
@@ -2258,6 +2309,101 @@ $("#msgList").onclick = async e => {
   if (d) { const inp = $(`[data-replyto="${CSS.escape(d.dataset.msgdone)}"]`); await act("msg_done", { id: d.dataset.msgdone, done: true, reply: inp ? inp.value : "" }, "已標記完成"); loadMsgs(); }
   if (x) { if (x.dataset.confirm !== "1") { x.dataset.confirm = "1"; x.classList.remove("iconbtn"); x.textContent = "確定刪除？"; return; } await act("msg_delete", { id: x.dataset.msgdel }, "已刪除"); loadMsgs(); }
 };
+
+// ---------- bug tracker ----------
+var BUGS = null, bugF = "open", bugS = "all", bugCur = null;
+const GH_IC = "M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49v-1.7c-2.78.62-3.37-1.38-3.37-1.38-.46-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.57 2.34 1.12 2.91.85.09-.66.35-1.12.63-1.37-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.04 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05a9.4 9.4 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.71 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.94.68 1.9v2.82c0 .27.18.6.69.49A10.26 10.26 0 0 0 22 12.25C22 6.58 17.52 2 12 2z";
+const ghIcon = () => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="fill:currentColor;stroke:none"><path d="${GH_IC}"/></svg>`;
+async function loadBugs(refresh) {
+  try { BUGS = await api("/api/bugs" + (refresh ? "?refresh=1" : "")); renderBugs(); } catch (e) { $("#bugList").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function bugItems() {
+  const d = BUGS, out = [];
+  d.member.forEach(b => out.push({ k: "m", id: b.id, title: b.title, who: b.by, at: b.at, up: b.updated, open: ["new", "doing"].includes(b.status), st: b.status, stl: d.statuses[b.status],
+    meta: `${d.areas[b.area]}・${d.severities[b.severity]}${b.priority ? "・優先 " + d.priorities[b.priority] : ""}${b.shots.length ? `・${b.shots.length} 張截圖` : ""}${b.thread.length ? `・${b.thread.length} 則對話` : ""}`, sev: b.severity }));
+  (d.github.items || []).forEach(i => out.push({ k: "g", id: i.number, title: i.title, who: i.author, at: Date.parse(i.created) / 1000, up: Date.parse(i.updated) / 1000,
+    open: i.state === "OPEN", st: i.state === "OPEN" ? (i.labels.includes("bug") ? "new" : "new") : i.reason === "NOT_PLANNED" ? "wontfix" : "fixed",
+    stl: i.state === "OPEN" ? "待處理" : i.reason === "NOT_PLANNED" ? "不處理" : "已關閉", meta: `#${i.number}${i.labels.length ? "・" + i.labels.join("、") : ""}${i.comments ? `・${i.comments} 則留言` : ""}`, url: i.url }));
+  return out;
+}
+function renderBugs() {
+  const all = bugItems(), open = all.filter(x => x.open);
+  $("#bugCount").textContent = open.filter(x => x.k === "g" || x.st === "new").length || "";
+  const list = all.filter(x => (bugF === "all" || (bugF === "open") === x.open) && (bugS === "all" || bugS === x.k)).sort((a, b) => (b.open - a.open) || (b.sev === "blocker") - (a.sev === "blocker") || b.up - a.up);
+  $("#bugList").innerHTML = list.length ? list.map(x => {
+    const pr = x.k === "m" ? (BUGS.profiles[x.who] || {}) : null;
+    const av = x.k === "g" ? `<span class="badge devbadge" style="--c:#24292f">${ghIcon()}</span>` : memAvatar({ login: x.who, profile: pr, active: true });
+    return `<button class="bugrow" data-bug="${x.k}:${esc(String(x.id))}">${av}<span class="grow"><span class="t">${x.sev === "blocker" && x.open ? `<span style="color:var(--bad)">${icon("alert")}</span> ` : ""}${esc(x.title)}</span>
+      <span class="s">${esc(x.k === "g" ? "GitHub・" + x.who : (pr && pr.nickname) || x.who)}・${ago(x.at)}・${esc(x.meta)}</span></span><span class="bst ${x.open ? x.st : "closed"}">${esc(x.stl)}</span></button>`; }).join("")
+    : `<div class="empty">${bugF === "open" ? "沒有待處理的回報 🎉" : "沒有回報"}</div>`;
+  const g = BUGS.github;
+  $("#bugSrc").hidden = !!g.off;
+  if (g.off) { $("#bugFoot").innerHTML = `家人在自己的專屬網頁按「回報問題」，有新回報會推播通知你。<br>想同時管理 GitHub 上的回報，在 config.json 設定 <code>github_repo</code>。`; return; }
+  $("#bugFoot").innerHTML = `${ghIcon()} GitHub：${g.error ? `<span style="color:var(--bad)">讀不到（${esc(g.error)}）</span>` : `${(g.items || []).length} 個 issue，${g.at ? ago(g.at) : "—"}更新`}
+    ・<a href="https://github.com/${esc(g.repo)}/issues" target="_blank" rel="noopener">在 GitHub 打開</a>・<a href="#" id="bugRefresh">立即更新</a>
+    <br>家人在自己的專屬網頁按「回報問題」；其他人在 GitHub 用中文表單回報。有新回報會推播通知你。`;
+}
+function openBug(key) {
+  const [k, id] = key.split(":"); bugCur = { k, id };
+  $("#bugSheet").hidden = false; $("#bugBody").scrollTop = 0;
+  if (k === "m") renderMemberBug(); else renderGhBug();
+}
+function renderMemberBug() {
+  const d = BUGS, b = d.member.find(x => x.id === bugCur.id); if (!b) { $("#bugSheet").hidden = true; return; }
+  const pr = d.profiles[b.by] || {};
+  $("#bugBadge").innerHTML = memAvatar({ login: b.by, profile: pr, active: true }); $("#bugTitle").textContent = (pr.nickname || b.by) + " 的回報";
+  const dev = b.device ? `<details style="margin-top:8px"><summary>裝置資訊</summary><div class="small muted" style="overflow-wrap:anywhere">${esc(b.device.ua)}<br>螢幕 ${esc(b.device.screen)}・語言 ${esc(b.device.lang)}<br>頁面 ${esc(b.device.page)}</div></details>` : "";
+  $("#bugBody").innerHTML = `<div class="bug-sheet">
+    <div class="sect"><div style="font-size:18px;font-weight:800;overflow-wrap:anywhere">${esc(b.title)}</div>
+      <div class="small muted" style="margin:4px 0 10px">${new Date(b.at * 1000).toLocaleString("zh-TW", { hour12: false })}・${esc(d.areas[b.area])}・${esc(d.severities[b.severity])}</div>
+      ${b.desc ? `<div class="bug-desc">${esc(b.desc)}</div>` : `<div class="small muted">（沒有寫說明）</div>`}
+      ${b.shots.length ? `<div class="bug-shots" style="margin-top:10px">${b.shots.map(n => `<img src="/api/bugshot?id=${b.id}&n=${n}" alt="截圖 ${n + 1}" data-zoom>`).join("")}</div>` : ""}${dev}</div>
+    <div class="sect"><div class="st">狀態</div><div class="chipbtns">${Object.entries(d.statuses).map(([k, l]) => chip(b.status === k, `data-bst="${k}"`, l)).join("")}</div>
+      <div class="st" style="margin-top:12px">優先度</div><div class="chipbtns">${chip(!b.priority, `data-bpr=""`, "未設定")}${Object.entries(d.priorities).map(([k, l]) => chip(b.priority === k, `data-bpr="${k}"`, l)).join("")}</div></div>
+    <div class="sect"><div class="st">對話</div>${b.thread.length ? b.thread.map(m => `<div class="bug-msg ${m.from === "owner" ? "me" : "them"}"><div class="w">${m.from === "owner" ? "你" : esc(pr.nickname || m.from)}・${ago(m.t)}</div>${esc(m.text)}</div>`).join("") : `<div class="small muted">還沒有對話</div>`}
+      <textarea id="bugReply" placeholder="回覆他（會顯示在他的專屬網頁上）"></textarea><div class="btns" style="margin-top:6px"><button class="btn sm primary" id="bugReplyBtn">${icon("send")}送出回覆</button></div></div>
+    <div class="sect"><div class="st">私人筆記（只有你看得到）</div><textarea id="bugNote" placeholder="例如：原因、怎麼修的">${esc(b.note || "")}</textarea>
+      <div class="btns" style="margin-top:6px"><button class="btn sm" id="bugNoteBtn">儲存筆記</button><button class="btn sm danger" id="bugDel">${icon("trash")}刪除這個回報</button></div></div></div>`;
+}
+async function renderGhBug() {
+  const n = bugCur.id;
+  $("#bugBadge").innerHTML = `<span class="badge devbadge" style="--c:#24292f">${ghIcon()}</span>`; $("#bugTitle").textContent = "GitHub #" + n;
+  $("#bugBody").innerHTML = `<div class="skel"><i></i><i></i><i></i></div>`;
+  let i; try { i = await api("/api/bug_issue?n=" + n); } catch (e) { $("#bugBody").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  if (bugCur.id !== n) return;
+  const L = ["bug", "enhancement", "question", "需要更多資訊", "duplicate", "help wanted"];
+  $("#bugBody").innerHTML = `<div class="bug-sheet">
+    <div class="sect"><div style="font-size:18px;font-weight:800;overflow-wrap:anywhere">${esc(i.title)}</div>
+      <div class="small muted" style="margin:4px 0 10px">${esc(i.author)}・${new Date(i.created).toLocaleString("zh-TW", { hour12: false })}・${i.state === "OPEN" ? "待處理" : "已關閉"}</div>
+      <div class="bug-desc">${esc(i.body) || "（沒有內容）"}</div>
+      <div class="btns" style="margin-top:8px"><a class="btn sm" href="${esc(i.url)}" target="_blank" rel="noopener">${ghIcon()}在 GitHub 打開</a></div></div>
+    <div class="sect"><div class="st">狀態</div><div class="btns">${i.state === "OPEN"
+      ? `<button class="btn sm primary" data-ghs="fixed">${icon("tick")}標為已修好並關閉</button><button class="btn sm" data-ghs="wontfix">不處理並關閉</button>`
+      : `<button class="btn sm" data-ghs="reopen">${icon("refresh")}重新打開</button>`}</div>
+      <div class="st" style="margin-top:12px">標籤</div><div class="chipbtns">${L.map(l => chip(i.labels.includes(l), `data-ghl="${esc(l)}"`, esc(l))).join("")}</div></div>
+    <div class="sect"><div class="st">留言（${i.comments.length}）</div>${i.comments.map(c => `<div class="bug-msg ${c.author === BUGS.github.repo.split("/")[0] ? "me" : "them"}"><div class="w">${esc(c.author)}・${ago(Date.parse(c.t) / 1000)}</div>${esc(c.body)}</div>`).join("") || `<div class="small muted">還沒有留言</div>`}
+      <textarea id="ghReply" placeholder="用你的 GitHub 帳號公開回覆（所有人都看得到）"></textarea><div class="btns" style="margin-top:6px"><button class="btn sm primary" id="ghReplyBtn">${icon("send")}公開回覆</button></div></div></div>`;
+}
+document.addEventListener("click", async e => {
+  const t = e.target;
+  const row = t.closest("[data-bug]"); if (row) return openBug(row.dataset.bug);
+  const bf = t.closest("[data-bf]"); if (bf) { bugF = bf.dataset.bf; $$("#bugFilter .chipbtn").forEach(x => x.classList.toggle("on", x === bf)); return renderBugs(); }
+  const bs = t.closest("[data-bs]"); if (bs) { bugS = bs.dataset.bs; $$("#bugSrc .chipbtn").forEach(x => x.classList.toggle("on", x === bs)); return renderBugs(); }
+  if (t.id === "bugRefresh") { e.preventDefault(); toast("更新中…"); return loadBugs(true); }
+  if (t.closest("#bugDone") || t.id === "bugSheet") { $("#bugSheet").hidden = true; bugCur = null; return; }
+  const z = t.closest("[data-zoom]"); if (z) { const o = document.createElement("div"); o.className = "zoomimg"; o.innerHTML = `<img src="${z.src}" alt="">`; o.onclick = () => o.remove(); document.body.appendChild(o); return; }
+  if (!bugCur) return;
+  const upd = async (arg, msg) => { try { await act("bug_update", { id: bugCur.id, ...arg }, msg); await loadBugs(); renderMemberBug(); } catch {} };
+  const st = t.closest("[data-bst]"); if (st) return upd({ status: st.dataset.bst }, "狀態已更新");
+  const bp = t.closest("[data-bpr]"); if (bp) return upd({ priority: bp.dataset.bpr }, "優先度已更新");
+  if (t.closest("#bugReplyBtn")) { const v = $("#bugReply").value.trim(); if (!v) return; return upd({ reply: v, ...(BUGS.member.find(x => x.id === bugCur.id).status === "new" ? { status: "doing" } : {}) }, "已回覆，他打開網頁就看得到"); }
+  if (t.closest("#bugNoteBtn")) return upd({ note: $("#bugNote").value }, "筆記已儲存");
+  const del = t.closest("#bugDel"); if (del) { if (del.dataset.confirm !== "1") { del.dataset.confirm = "1"; del.textContent = "確定刪除？"; return; }
+    try { await act("bug_delete", { id: bugCur.id }, "已刪除"); $("#bugSheet").hidden = true; bugCur = null; loadBugs(); } catch {} return; }
+  const gs = t.closest("[data-ghs]"); if (gs) { try { await act("gh_state", { number: bugCur.id, state: gs.dataset.ghs }, "GitHub 已更新"); await loadBugs(true); renderGhBug(); } catch {} return; }
+  const gl = t.closest("[data-ghl]"); if (gl) { try { await act("gh_label", { number: bugCur.id, label: gl.dataset.ghl, on: !gl.classList.contains("on") }, "標籤已更新"); renderGhBug(); } catch {} return; }
+  if (t.closest("#ghReplyBtn")) { const v = $("#ghReply").value.trim(); if (!v) return; try { await act("gh_comment", { number: bugCur.id, text: v }, "已在 GitHub 公開回覆"); renderGhBug(); loadBugs(); } catch {} return; }
+});
 
 // ---------- shares + backup ----------
 async function loadShares() {

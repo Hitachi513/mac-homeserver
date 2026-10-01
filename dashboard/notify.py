@@ -33,6 +33,7 @@ KINDS = {
     "message": ("成員留言", True),
     "arrival": ("家人到家", True),
     "backup": ("雲端備份結果", True),
+    "bug": ("問題回報（家人或 GitHub）", True),
 }
 
 _lock = threading.Lock()

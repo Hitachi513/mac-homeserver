@@ -22,6 +22,8 @@ DEFAULTS = {
     "shadowrocket": False,
     # Contact URL (https://… or mailto:…) sent to push services with each Web Push request (required by VAPID)
     "contact": "https://github.com",
+    # GitHub repo whose issues appear in 成員 › 回報 (e.g. "you/your-fork"); empty = family reports only
+    "github_repo": "",
 }
 
 
@@ -44,3 +46,4 @@ DRIVE_NAME = CFG["drive_name"]
 LABEL_PREFIX = CFG["label_prefix"]
 SHADOWROCKET = bool(CFG["shadowrocket"])
 CONTACT = CFG["contact"]
+GITHUB_REPO = CFG["github_repo"]

@@ -20,6 +20,7 @@ KINDS = {
     "banned_hit": ("被封鎖的位址又來了", "bad"),
     "auto_ban": ("自動封鎖", "bad"),
     "share_pw": ("分享密碼猜錯", "warn"),
+    "portal_pw": ("成員網頁密碼猜錯", "warn"),
     "share_bad": ("猜分享連結", "warn"),
     "csrf": ("擋下跨站請求", "bad"),
     "spoof": ("偽造身分連控制台", "bad"),
@@ -30,7 +31,7 @@ KINDS = {
     "backup_denied": ("沒開放的自動備份", "info"),
 }
 # how many events of these kinds from one address within an hour gets it banned for a day
-BAN_RULES = {"bad_token": 40, "share_bad": 40, "share_pw": 25, "csrf": 10, "oversize": 10}
+BAN_RULES = {"bad_token": 40, "share_bad": 40, "share_pw": 25, "portal_pw": 20, "csrf": 10, "oversize": 10}
 BAN_HOURS = 24
 KEEP_DAYS = 7
 
