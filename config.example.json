@@ -7,5 +7,6 @@
   "label_prefix": "local.homeserver",
   "shadowrocket": false,
   "contact": "https://github.com/your-name",
-  "github_repo": ""
+  "github_repo": "",
+  "upstream_repo": "Hitachi513/mac-homeserver"
 }

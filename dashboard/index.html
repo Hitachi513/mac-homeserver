@@ -730,7 +730,7 @@ html.no-sr .feat-sr { display: none !important; }
 .bug-shots { display: flex; gap: 8px; flex-wrap: wrap; }
 .bug-shots img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; cursor: zoom-in; background: var(--fill); }
 .bug-msg { padding: 8px 12px; border-radius: 14px; margin: 6px 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 92%; }
-.bug-msg.them { background: var(--fill); } .bug-msg.me { background: color-mix(in srgb, var(--accent) 16%, transparent); margin-left: auto; }
+.bug-msg.them { background: var(--fill); } .bug-msg.mine { background: color-mix(in srgb, var(--accent) 16%, transparent); margin-left: auto; }
 .bug-msg .w { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
 .bug-sheet textarea { width: 100%; min-height: 70px; font: inherit; font-size: 16px; resize: vertical; }
 .zoomimg { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.85); display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -905,6 +905,9 @@ html.no-sr .feat-sr { display: none !important; }
     <div class="section-title right"><button class="btn sm" id="memReload"><i data-ic="refresh"></i>重新整理</button></div>
   </div>
   <div class="pane stack" id="mem-bugs" hidden>
+    <div class="card"><div class="row" style="border:0;padding:0;align-items:center"><span class="badge devbadge" style="--c:#ff9f0a"><i data-ic="alert"></i></span>
+      <div class="grow"><div class="t">這套系統本身有問題？</div><div class="s" style="white-space:normal">告訴系統作者，系統會幫你整理好、自動遮掉個人資料</div></div></div>
+      <div class="btns" style="margin-top:10px"><button class="btn primary" id="upOpen"><i data-ic="send"></i>回報給系統作者</button></div></div>
     <div class="card"><div class="chipbtns" id="bugFilter"><button class="chipbtn on" data-bf="open">待處理</button><button class="chipbtn" data-bf="done">已結束</button><button class="chipbtn" data-bf="all">全部</button></div>
       <div class="chipbtns" id="bugSrc" style="margin-top:8px"><button class="chipbtn on" data-bs="all">全部來源</button><button class="chipbtn" data-bs="m">家人</button><button class="chipbtn" data-bs="g">GitHub</button><button class="chipbtn" data-bs="s">🔒 資安</button></div></div>
     <div class="card list" id="bugList"><div class="skel"><i></i><i></i><i></i></div></div>
@@ -993,6 +996,12 @@ html.no-sr .feat-sr { display: none !important; }
 
 </main>
 <div class="toast" id="toast"></div>
+<div class="sheet" id="upSheet" hidden>
+  <div class="sheet-box">
+    <div class="sheet-head"><span class="badge devbadge" style="--c:#ff9f0a"><i data-ic="send"></i></span><div class="t">回報給系統作者</div><button class="done" id="upClose">取消</button></div>
+    <div class="sheet-body" id="upBody"></div>
+  </div>
+</div>
 <div class="sheet" id="bugSheet" hidden>
   <div class="sheet-box">
     <div class="sheet-head"><span id="bugBadge"></span><div class="t" id="bugTitle">問題回報</div><button class="done" id="bugDone">完成</button></div>
@@ -2329,7 +2338,7 @@ function bugItems() {
   const sec = d.security || { items: [], states: {} };
   sec.items.forEach(a => out.push({ k: "s", id: a.id, title: a.title, who: a.reporter, at: Date.parse(a.created) / 1000, up: Date.parse(a.updated) / 1000,
     open: ["triage", "draft"].includes(a.state), st: "sec", stl: sec.states[a.state] || a.state, sev: "security",
-    meta: `私下回報${a.severity ? "・嚴重度 " + (SEV_ZH[a.severity] || a.severity) : ""}`, url: a.url }));
+    meta: a.severity ? "嚴重度 " + (SEV_ZH[a.severity] || a.severity) : "還沒評估嚴重度", url: a.url }));
   return out;
 }
 function renderBugs() {
@@ -2366,7 +2375,7 @@ function renderMemberBug() {
       ${b.shots.length ? `<div class="bug-shots" style="margin-top:10px">${b.shots.map(n => `<img src="/api/bugshot?id=${b.id}&n=${n}" alt="截圖 ${n + 1}" data-zoom>`).join("")}</div>` : ""}${dev}</div>
     <div class="sect"><div class="st">狀態</div><div class="chipbtns">${Object.entries(d.statuses).map(([k, l]) => chip(b.status === k, `data-bst="${k}"`, l)).join("")}</div>
       <div class="st" style="margin-top:12px">優先度</div><div class="chipbtns">${chip(!b.priority, `data-bpr=""`, "未設定")}${Object.entries(d.priorities).map(([k, l]) => chip(b.priority === k, `data-bpr="${k}"`, l)).join("")}</div></div>
-    <div class="sect"><div class="st">對話</div>${b.thread.length ? b.thread.map(m => `<div class="bug-msg ${m.from === "owner" ? "me" : "them"}"><div class="w">${m.from === "owner" ? "你" : esc(pr.nickname || m.from)}・${ago(m.t)}</div>${esc(m.text)}</div>`).join("") : `<div class="small muted">還沒有對話</div>`}
+    <div class="sect"><div class="st">對話</div>${b.thread.length ? b.thread.map(m => `<div class="bug-msg ${m.from === "owner" ? "mine" : "them"}"><div class="w">${m.from === "owner" ? "你" : esc(pr.nickname || m.from)}・${ago(m.t)}</div>${esc(m.text)}</div>`).join("") : `<div class="small muted">還沒有對話</div>`}
       <textarea id="bugReply" placeholder="回覆他（會顯示在他的專屬網頁上）"></textarea><div class="btns" style="margin-top:6px"><button class="btn sm primary" id="bugReplyBtn">${icon("send")}送出回覆</button></div></div>
     <div class="sect"><div class="st">私人筆記（只有你看得到）</div><textarea id="bugNote" placeholder="例如：原因、怎麼修的">${esc(b.note || "")}</textarea>
       <div class="btns" style="margin-top:6px"><button class="btn sm" id="bugNoteBtn">儲存筆記</button><button class="btn sm danger" id="bugDel">${icon("trash")}刪除這個回報</button></div></div></div>`;
@@ -2408,7 +2417,7 @@ async function renderGhBug() {
       ? `<button class="btn sm primary" data-ghs="fixed">${icon("tick")}標為已修好並關閉</button><button class="btn sm" data-ghs="wontfix">不處理並關閉</button>`
       : `<button class="btn sm" data-ghs="reopen">${icon("refresh")}重新打開</button>`}</div>
       <div class="st" style="margin-top:12px">標籤</div><div class="chipbtns">${L.map(l => chip(i.labels.includes(l), `data-ghl="${esc(l)}"`, esc(l))).join("")}</div></div>
-    <div class="sect"><div class="st">留言（${i.comments.length}）</div>${i.comments.map(c => `<div class="bug-msg ${c.author === BUGS.github.repo.split("/")[0] ? "me" : "them"}"><div class="w">${esc(c.author)}・${ago(Date.parse(c.t) / 1000)}</div>${esc(c.body)}</div>`).join("") || `<div class="small muted">還沒有留言</div>`}
+    <div class="sect"><div class="st">留言（${i.comments.length}）</div>${i.comments.map(c => `<div class="bug-msg ${c.author === BUGS.github.repo.split("/")[0] ? "mine" : "them"}"><div class="w">${esc(c.author)}・${ago(Date.parse(c.t) / 1000)}</div>${esc(c.body)}</div>`).join("") || `<div class="small muted">還沒有留言</div>`}
       <textarea id="ghReply" placeholder="用你的 GitHub 帳號公開回覆（所有人都看得到）"></textarea><div class="btns" style="margin-top:6px"><button class="btn sm primary" id="ghReplyBtn">${icon("send")}公開回覆</button></div></div></div>`;
 }
 document.addEventListener("click", async e => {
@@ -2431,6 +2440,70 @@ document.addEventListener("click", async e => {
   const gs = t.closest("[data-ghs]"); if (gs) { try { await act("gh_state", { number: bugCur.id, state: gs.dataset.ghs }, "GitHub 已更新"); await loadBugs(true); renderGhBug(); } catch {} return; }
   const gl = t.closest("[data-ghl]"); if (gl) { try { await act("gh_label", { number: bugCur.id, label: gl.dataset.ghl, on: !gl.classList.contains("on") }, "標籤已更新"); renderGhBug(); } catch {} return; }
   if (t.closest("#ghReplyBtn")) { const v = $("#ghReply").value.trim(); if (!v) return; try { await act("gh_comment", { number: bugCur.id, text: v }, "已在 GitHub 公開回覆"); renderGhBug(); loadBugs(); } catch {} return; }
+});
+
+// ---------- report to the system author (prefilled GitHub issue; no GitHub knowledge needed) ----------
+var UP = null;
+const UP_AREAS = ["安裝（install.sh）", "控制台", "成員專屬網頁", "雲端硬碟", "擋廣告（AdGuard）", "Tailscale／連線", "Shadowrocket", "安全監測", "其他"];
+async function openUpstream() {
+  UP = { kind: "bug", area: "控制台", diag: null };
+  $("#upSheet").hidden = false; renderUpstream();
+  try { UP.diag = await api("/api/diag"); } catch (e) { UP.diag = { env: "（讀不到：" + e.message + "）", errors: "", upstream: "" }; }
+  if (!$("#upSheet").hidden) renderUpstream(true);
+}
+function upClient() {
+  const ua = navigator.userAgent, dev = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" : /Mac/.test(ua) ? "Mac" : "電腦";
+  const br = /CriOS|Chrome/.test(ua) ? "Chrome" : /FxiOS|Firefox/.test(ua) ? "Firefox" : /Safari/.test(ua) ? "Safari" : "瀏覽器";
+  const os = (ua.match(/OS (\d+[_\d]*) like Mac/) || [])[1];
+  return `${dev}${os ? " iOS " + os.replace(/_/g, ".") : ""} ${br}${matchMedia("(display-mode: standalone)").matches ? "（加入主畫面）" : ""}`;
+}
+function renderUpstream(keep) {
+  const v = id => (document.getElementById(id) || {}).value;
+  const prev = keep ? { title: v("upTitle"), what: v("upWhat"), steps: v("upSteps"), client: v("upClient") } : {};
+  const d = UP.diag, bug = UP.kind === "bug";
+  $("#upBody").innerHTML = `<div class="bug-sheet">
+    <div class="sect"><div class="st">要回報什麼？</div><div class="chipbtns" data-ug="kind">${chip(bug, `data-uv="bug"`, "🐞 有東西壞掉")}${chip(!bug, `data-uv="idea"`, "💡 想要新功能")}</div></div>
+    ${bug ? `<div class="sect"><div class="st">哪個部分？</div><div class="chipbtns" data-ug="area">${UP_AREAS.map(a => chip(UP.area === a, `data-uv="${esc(a)}"`, esc(a))).join("")}</div></div>` : ""}
+    <div class="sect"><div class="st">${bug ? "用一句話說發生什麼事" : "你想要什麼？（一句話）"}</div><input type="text" id="upTitle" maxlength="100" value="${esc(prev.title || "")}" placeholder="${bug ? "例如：雲端上傳 HEIC 照片會失敗" : "例如：希望雲端可以一次下載整個相簿"}" style="width:100%;font-size:16px"></div>
+    <div class="sect"><div class="st">${bug ? "詳細說明：你看到什麼？原本以為會怎樣？" : "為什麼需要？"}</div><textarea id="upWhat" maxlength="4000">${esc(prev.what || "")}</textarea></div>
+    ${bug ? `<div class="sect"><div class="st">怎麼讓它再發生一次？（可以不填）</div><textarea id="upSteps" maxlength="2000" placeholder="1. 打開控制台 → 雲端&#10;2. 點「上傳」，選一張照片&#10;3. 出現錯誤">${esc(prev.steps || "")}</textarea></div>
+    <div class="sect"><div class="st">在什麼裝置上看到？</div><input type="text" id="upClient" value="${esc(prev.client || upClient())}" style="width:100%;font-size:16px"></div>
+    <div class="sect"><div class="st">自動附上的資訊 <span class="small muted">（已遮掉網址、IP、成員名字、email，可以自己再修改）</span></div>
+      ${d ? `<textarea id="upEnv" style="min-height:120px;font:16px/1.45 ui-monospace,Menlo,monospace">${esc(d.env)}</textarea>
+      <div class="st" style="margin-top:8px">最近的錯誤記錄</div><textarea id="upErr" style="min-height:120px;font:16px/1.45 ui-monospace,Menlo,monospace">${esc(d.errors)}</textarea>` : `<div class="skel"><i></i><i></i></div>`}</div>` : ""}
+    <div class="sect"><div class="small muted" style="margin-bottom:10px">按下面的按鈕會打開 GitHub，內容都已經幫你填好。<b>登入 GitHub 後按「Create」就送出了</b>（沒有帳號可以免費註冊）。想附截圖，在 GitHub 頁面上直接把圖片貼上或拖進去。</div>
+      <div class="btns"><a class="btn primary" id="upGo" target="_blank" rel="noopener" href="#">${icon("send")}打開 GitHub 送出</a><button class="btn" id="upCopy">${icon("clipboard")}複製內容</button></div>
+      <div class="small muted" style="margin-top:8px">不想用 GitHub？按「複製內容」，再用任何方式傳給系統作者。</div></div></div>`;
+  upLink();
+}
+function upText() {
+  const v = id => ((document.getElementById(id) || {}).value || "").trim();
+  if (UP.kind !== "bug") return `【想要的功能】\n${v("upTitle")}\n\n【為什麼需要】\n${v("upWhat")}`;
+  return `【哪個部分】${UP.area}\n【發生什麼事】${v("upTitle")}\n${v("upWhat")}\n\n【怎麼重現】\n${v("upSteps") || "（沒有填）"}\n\n【裝置】${v("upClient")}\n\n【系統資訊】\n${v("upEnv")}\n\n【錯誤記錄】\n${v("upErr")}`;
+}
+function upLink() {
+  const a = $("#upGo"); if (!a) return;
+  const v = id => ((document.getElementById(id) || {}).value || "").trim();
+  const repo = (UP.diag && UP.diag.upstream) || "Hitachi513/mac-homeserver";
+  const env = v("upEnv"), q = new URLSearchParams();
+  if (UP.kind === "bug") {
+    const ver = (env.match(/版本：(.*)/) || [])[1] || "", mac = [(env.match(/macOS：(.*)/) || [])[1], (env.match(/Mac：(.*)/) || [])[1]].filter(Boolean).join("，");
+    q.set("template", "bug_report.yml"); q.set("title", "[問題] " + v("upTitle"));
+    q.set("area", UP.area); q.set("what", `【${UP.area}】${v("upWhat") ? "\n" + v("upWhat") : ""}`); q.set("steps", v("upSteps"));
+    q.set("macos", mac); q.set("client", v("upClient")); q.set("version", ver);
+    q.set("logs", (env + "\n\n" + v("upErr")).slice(0, 3500));
+  } else { q.set("template", "feature_request.yml"); q.set("title", "[建議] " + v("upTitle")); q.set("want", v("upTitle")); q.set("why", v("upWhat")); }
+  a.href = `https://github.com/${repo}/issues/new?` + q.toString();
+}
+document.addEventListener("input", e => { if (e.target.closest && e.target.closest("#upBody")) upLink(); });
+document.addEventListener("click", async e => {
+  const t = e.target;
+  if (t.closest("#upOpen")) return openUpstream();
+  if (t.closest("#upClose") || t.id === "upSheet") { $("#upSheet").hidden = true; return; }
+  const c = t.closest("#upBody [data-uv]"); if (c) { UP[c.parentElement.dataset.ug] = c.dataset.uv; return renderUpstream(true); }
+  const go = t.closest("#upGo"); if (go && !$("#upTitle").value.trim()) { e.preventDefault(); toast("請先用一句話寫下發生什麼事", "alert"); $("#upTitle").focus(); return; }
+  if (go) { toast("已打開 GitHub，登入後按「Create」就送出了", "ok"); return; }
+  if (t.closest("#upCopy")) { try { await navigator.clipboard.writeText(upText()); toast("已複製", "ok"); } catch { toast("無法複製", "alert"); } }
 });
 
 // ---------- shares + backup ----------

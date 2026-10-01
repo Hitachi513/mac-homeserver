@@ -1722,6 +1722,68 @@ def run_selftest():
     log_event("安全", f"自我攻擊測試：{len(res) - len(failed)}/{len(res)} 項擋下" + (f"，沒擋下：{'、'.join(failed)}" if failed else ""))
 
 
+# ---------- "回報給系統作者": diagnostics with personal data removed ----------
+def redact(text, extra=()):
+    """Strip anything that identifies this household before text goes to a public GitHub issue."""
+    t = str(text)
+    for word in sorted({w for w in extra if w and len(w) >= 3}, key=len, reverse=True):
+        t = t.replace(word, "[成員]")
+    t = re.sub(r"[A-Za-z0-9-]+\.[A-Za-z0-9-]+\.ts\.net", "[我的電腦].ts.net", t)
+    t = re.sub(r"tskey-[A-Za-z0-9-]+", "[金鑰]", t)
+    t = re.sub(r"/p/(s/)?[0-9a-f]{24,32}", "/p/[秘密網址]", t)
+    t = re.sub(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", "[UUID]", t, flags=re.I)
+    t = re.sub(r"[\w.+-]+@[\w-]+(\.[\w-]+)+", "[email]", t)
+    import ipaddress
+
+    def ip_sub(m):
+        try:
+            ip = ipaddress.ip_address(m.group(0).strip("[]"))
+        except ValueError:
+            return m.group(0)
+        return "[IP]" if ip.version == 4 else "[IPv6]"
+    t = re.sub(r"(?<![\w.:])(?:\d{1,3}\.){3}\d{1,3}(?![\w.])", ip_sub, t)
+    t = re.sub(r"(?<![\w:])[0-9A-Fa-f]{0,4}(?::[0-9A-Fa-f]{0,4}){2,7}(?![\w:])", ip_sub, t)
+    t = re.sub(r"/Users/[^/\s]+", "/Users/[我]", t)
+    t = re.sub(r"\b[0-9a-f]{32,}\b", "[長代碼]", t)
+    return t
+
+
+def diagnostics():
+    base = os.path.dirname(HERE)
+    ver = run(["git", "-C", base, "describe", "--tags", "--always"])[1].strip() or "?"
+    hw = macstats.hardware()
+    agh_v = (safe(lambda: agh("status")) or {}).get("version", "?")
+    lines = [f"版本：{ver}", f"macOS：{hw.get('os', '?')}（{hw.get('build', '')}）", f"Mac：{hw.get('name', '?')}・{hw.get('chip', '?')}・{hw.get('memory', '?')}",
+             f"Python：{'.'.join(map(str, __import__('sys').version_info[:3]))}",
+             f"Tailscale：{run([TAILSCALE, 'version'])[1].split(chr(10))[0] or '?'}・AdGuard：{agh_v}" +
+             (f"・Xray：{(run([XRAY_BIN, 'version'])[1].split() or ['', '?'])[1]}" if settings.SHADOWROCKET else ""),
+             f"功能：Shadowrocket {'開' if settings.SHADOWROCKET else '關'}・雲端硬碟 {'已接上' if drive.mounted() else '沒接上'}・成員 {len(load_members()['people'])} 人"]
+    errs = []
+    try:
+        with open(os.path.join(HERE, "panel.log"), errors="replace") as f:
+            tail = [l.rstrip("\n") for l in f.readlines()[-600:]]
+        blocks, cur = [], None
+        for l in tail:  # group each traceback (including chained ones) with the exception line that ends it
+            if l.startswith("Traceback") and cur is None:
+                cur = [l]
+            elif cur is not None:
+                cur.append(l)
+                if re.match(r"^[A-Za-z_][\w.]*(Error|Exception|Warning|Exit|Interrupt)\b", l):
+                    blocks.append(cur)
+                    cur = None
+        noise = ("BrokenPipe", "ConnectionReset", "ConnectionAborted", "socket.timeout", "TimeoutError")
+        real = [b for b in blocks if not any(n in b[-1] for n in noise)]
+        for b in real[-3:]:
+            errs += [b[0]] + [x for x in b[1:] if x.strip().startswith("File") and "/homeserver/" in x][-3:] + [b[-1]] + [""]
+    except OSError:
+        pass
+    errs += [f"{time.strftime('%m/%d %H:%M', time.localtime(e['t']))} {e['text']}" for e in list(EVENTS)[:60] if "⚠️" in e["text"]][:10]
+    members = [p["login"] for p in load_members()["people"]] + [x.split("@")[0] for x in OWNERS] + list(OWNERS)
+    err_text = redact("\n".join(errs), members).replace("/Users/[我]/homeserver/", "").strip()
+    return {"ok": True, "env": redact("\n".join(lines), members), "errors": err_text or "（最近沒有錯誤記錄）",
+            "upstream": settings.UPSTREAM_REPO}
+
+
 def _shared_ips():
     ips = {cached("pubip", 300, public_ip)}
     ips.discard(None)
@@ -3047,6 +3109,8 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     self.send_json({"ok": True, **security.summary(), "checks": cached("sec-checks", 60, security_checks),
                                     "selftest": {k: _selftest[k] for k in ("running", "at", "results", "progress")}})
+            elif u.path == "/api/diag":
+                self.send_json(diagnostics() if self.role == "owner" else {"ok": False, "error": "forbidden"}, 200 if self.role == "owner" else 403)
             elif u.path == "/api/bugs":
                 if self.role != "owner":
                     self.send_json({"ok": False, "error": "forbidden"}, 403)

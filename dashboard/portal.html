@@ -70,8 +70,8 @@ html.big .hero .chips { flex-wrap: wrap; overflow: visible; }
 .bst { display: inline-flex; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--fill); color: var(--text-2); white-space: nowrap; }
 .bst.new { background: var(--accent); color: #fff; } .bst.doing { background: #e08a00; color: #fff; } .bst.fixed { background: var(--good); color: #fff; }
 .bmsg { padding: 8px 12px; border-radius: 14px; margin: 6px 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.bmsg.owner { background: color-mix(in srgb, var(--accent) 14%, transparent); } .bmsg.me { background: var(--fill); }
-.bmsg .w { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.bmsg.owner { background: color-mix(in srgb, var(--accent) 14%, transparent); } .bmsg.mine { background: var(--fill); }
+.bmsg .bw { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
 .newdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); margin-left: 6px; vertical-align: 2px; }
 .readonly { font-size: 11px; font-weight: 700; letter-spacing: .5px; padding: 3px 8px; border-radius: 99px; background: var(--fill); color: var(--muted); }
 </style>
@@ -475,7 +475,7 @@ function renderMyBugs() {
     <div style="display:flex;gap:8px;align-items:flex-start"><div style="flex:1;min-width:0"><div class="t">${esc(b.title)}${b.unread ? '<span class="newdot" title="管理員回覆了"></span>' : ""}</div>
       <div class="s">${new Date(b.at * 1000).toLocaleDateString("zh-TW")}・${esc(BUGS.areas[b.area])}${b.shots ? `・${b.shots} 張截圖` : ""}</div></div>
       <span class="bst ${b.status}">${esc(BUGS.statuses[b.status])}</span></div>
-    ${b.thread.map(m => `<div class="bmsg ${m.from === "owner" ? "owner" : "me"}"><div class="w">${m.from === "owner" ? "管理員" : "我"}・${new Date(m.t * 1000).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>${esc(m.text)}</div>`).join("")}
+    ${b.thread.map(m => `<div class="bmsg ${m.from === "owner" ? "owner" : "mine"}"><div class="bw">${m.from === "owner" ? "管理員" : "我"}・${new Date(m.t * 1000).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>${esc(m.text)}</div>`).join("")}
     ${["fixed", "wontfix", "dup"].includes(b.status) ? `<details><summary>還是有問題？</summary><div class="inline" style="margin-top:6px"><input type="text" data-bugreply="${b.id}" placeholder="補充說明" style="font-size:16px"><button class="btn sm" data-bugsend="${b.id}">送出</button></div></details>`
       : `<div class="inline" style="margin-top:6px"><input type="text" data-bugreply="${b.id}" placeholder="補充說明（可以不填）" style="font-size:16px"><button class="btn sm" data-bugsend="${b.id}">送出</button></div>`}</div>`).join("") : "";
 }

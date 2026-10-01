@@ -24,6 +24,8 @@ DEFAULTS = {
     "contact": "https://github.com",
     # GitHub repo whose issues appear in 成員 › 回報 (e.g. "you/your-fork"); empty = family reports only
     "github_repo": "",
+    # Where "回報給系統作者" sends people (the original project); change it if you maintain a fork
+    "upstream_repo": "Hitachi513/mac-homeserver",
 }
 
 
@@ -47,3 +49,4 @@ LABEL_PREFIX = CFG["label_prefix"]
 SHADOWROCKET = bool(CFG["shadowrocket"])
 CONTACT = CFG["contact"]
 GITHUB_REPO = CFG["github_repo"]
+UPSTREAM_REPO = CFG["upstream_repo"]

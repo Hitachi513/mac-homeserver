@@ -81,6 +81,7 @@ iPhone ──Tailscale──▶ tailscale serve :443  ──▶ 控制台   127.
 | 🐞 遇到 bug、安裝失敗、跟說明不一樣 | [開一個「回報問題」](https://github.com/Hitachi513/mac-homeserver/issues/new?template=bug_report.yml) |
 | 💡 想要新功能、覺得哪裡可以更好用 | [開一個「建議新功能」](https://github.com/Hitachi513/mac-homeserver/issues/new?template=feature_request.yml) |
 | 🔒 發現安全漏洞 | **不要公開**，請[私下回報](https://github.com/Hitachi513/mac-homeserver/security/advisories/new) |
+| 🙋 不熟 GitHub | 在你自己的**控制台 → 成員 → 回報 → 回報給系統作者**，填中文表單，系統會自動整理好並遮掉個人資料，按一下就打開填好的 GitHub 頁面 |
 | 👨‍👩‍👧 你是某個家庭的成員（別人幫你架的） | 在你的**專屬網頁**按「回報問題」，會直接送給幫你架設的人 |
 
 需要 GitHub 帳號（免費）。表單是中文的，照著填就好。詳細說明請看 [CONTRIBUTING.md](CONTRIBUTING.md)。
