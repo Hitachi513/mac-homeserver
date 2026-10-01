@@ -107,7 +107,7 @@ Shadowrocket 功能本質上是代理伺服器。**在部分國家或地區，�
 
 ## 授權
 
-[MIT](LICENSE)。AdGuard Home（GPL-3.0）、Xray-core（MPL-2.0）、noVNC（MPL-2.0）、websockify（LGPL-3.0）
+[MIT](LICENSE)（第三方元件見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)）。AdGuard Home（GPL-3.0）、Xray-core（MPL-2.0）、noVNC（MPL-2.0）、websockify（LGPL-3.0）
 不包含在這個專案裡，由安裝程式從官方來源下載，各自依原本的授權使用。
 
 ---
