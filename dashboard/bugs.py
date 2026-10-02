@@ -198,7 +198,7 @@ def _gh(args, timeout=25):
 
 
 def gh_sync(on_new=None):
-    """Refresh the GitHub issue list (called every 10 minutes and when the page asks)."""
+    """Refresh the GitHub issue list (called every 5 minutes and when the page asks)."""
     if not REPO:
         return
     try:
@@ -262,7 +262,7 @@ def advisory_set_state(ghsa, state):
     return {"ok": True}
 
 
-def gh_list(max_age=600):
+def gh_list(max_age=300):
     if not REPO:
         return {"items": [], "error": None, "at": 0, "repo": "", "off": True}
     if time.time() - _ghc["at"] > max_age:

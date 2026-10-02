@@ -1161,7 +1161,7 @@ def policy_scheduler():
                     _cache["sec-policy"] = (time.time(), get_policy()[0])
                 except Exception:
                     pass
-            if n % 10 == 1:
+            if n % 5 == 1:  # GitHub issues + private security reports, every 5 minutes
                 bugs.gh_sync(on_new=lambda i: notify.send("security", "🔒 收到資安漏洞的私下回報", f"{i['title']}（{i['author']}）：打開控制台 → 成員 → 回報", "/#members", urgent=True)
                              if i.get("security") else notify.send("bug", "GitHub 有新的問題回報", f"#{i['number']} {i['title']}（{i['author']}）", "/#members"))
             macstats.record()
