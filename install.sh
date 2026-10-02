@@ -156,5 +156,10 @@ cat <<EOF
      成員權限才能自動套用。
   4. 加強防火牆（建議，需要輸入 Mac 密碼）：
        sudo bash $BASE/security/harden.sh
-  5. 控制台 → 設定 → 安全，看安全分數並按「自我攻擊測試」。
+  5. 讓開著 Tailscale 的裝置都擋廣告：Tailscale 後台 → DNS → Global nameservers
+     → Add nameserver → Custom，填 $("$TS" ip -4 2>/dev/null || echo "這台 Mac 的 Tailscale IP")，
+     再打開「Override DNS servers」。
+     這台 Mac 自己要直接用 AdGuard（Tailscale 的 DNS 沒辦法轉給自己，不改會查不到網址）：
+       networksetup -setdnsservers Wi-Fi 127.0.0.1 ::1 && "$TS" set --accept-dns=false
+  6. 控制台 → 設定 → 安全，看安全分數並按「自我攻擊測試」。
 EOF

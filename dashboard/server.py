@@ -1038,13 +1038,16 @@ def managed_sections(people, mac_ip, devices, now=None):
         # Inside the tailnet the hostname resolves to the Mac's tailnet IP, so members need this or their own
         # page won't open while Tailscale is on (kept even when expired, so they can see why).
         {"src": ["autogroup:member"], "dst": ["homemac"], "ip": [f"tcp:{PROXY_PORT}"]},
+        # Ad-blocking DNS for everyone: once the tailnet's global nameserver is this Mac (with "Override local DNS"),
+        # a device without it would lose DNS entirely, so it can't depend on a member being active.
+        {"src": ["autogroup:member"], "dst": ["homemac"], "ip": ["tcp:53", "udp:53"]},
     ]
     for p in sorted(people, key=lambda x: x["login"]):
         if p["login"] in OWNERS or not is_ts_login(p["login"]) or not person_active(p, now)[0]:
             continue
         if p["exit"]:
             grants.append({"src": [p["login"]], "dst": ["autogroup:internet"], "ip": ["*"]})
-        ports = [pt for k in p["services"] for pt in MAC_SERVICES[k][1]] + [f"tcp:{n}" for n in p["ports"]]
+        ports = [pt for k in p["services"] if k != "dns" for pt in MAC_SERVICES[k][1]] + [f"tcp:{n}" for n in p["ports"]]
         if ports:
             grants.append({"src": [p["login"]], "dst": ["homemac"], "ip": sorted(set(ports))})
         dev_ips = sorted({ip for i in p["devices"] if i in by_id and by_id[i]["user"] in OWNERS
@@ -1383,11 +1386,44 @@ def blocked_ips():
             "fe80::/10", "ff00::/8", "fd7a:115c:a1e0::/48"] + own_addresses()
 
 
+def tailnet_dns_check():
+    """Is the tailnet's global nameserver this Mac? Otherwise Tailscale devices (and this Mac) skip AdGuard."""
+    st = run([TAILSCALE, "dns", "status"])[1]
+    m = re.search(r"Resolvers \(in preference order\):\n(.*?)\n\n", st, re.S)
+    mine = set(run([TAILSCALE, "ip"])[1].split())
+    resolvers = re.findall(r"^\s+-\s+(\S+)", m.group(1), re.M) if m else []
+    if not m:
+        return _chk("tsdns", "Tailscale 裝置都經過擋廣告", "unknown", "讀不到 Tailscale DNS 設定")
+    if any(r.split(":")[0] in mine or r in mine for r in resolvers):
+        # Tailscale's 100.100.100.100 can't forward to its own node, so this Mac must use AdGuard directly
+        if "Tailscale DNS: enabled" in st:
+            return _chk("tsdns", "Tailscale 裝置都經過擋廣告", "bad", "這台 Mac 還在用 Tailscale 的 DNS，會查不到任何網址",
+                        "在 Mac 終端機執行：networksetup -setdnsservers Wi-Fi 127.0.0.1 ::1 && tailscale set --accept-dns=false")
+        return _chk("tsdns", "Tailscale 裝置都經過擋廣告", "ok", "全域 DNS 指向這台 Mac 的 AdGuard")
+    return _chk("tsdns", "Tailscale 裝置都經過擋廣告", "warn",
+                "沒有：開著 Tailscale 的裝置（包括這台 Mac）用的是一般 DNS，廣告擋不掉",
+                "Tailscale 後台 → DNS → Global nameservers → Add nameserver → Custom，填這台 Mac 的 Tailscale IP（" +
+                ", ".join(sorted(mine)) + "），再打開「Override DNS servers」")
+
+
+def ensure_agh_tailnet_names():
+    """This Mac uses AdGuard directly (not Tailscale DNS), so send *.<tailnet>.ts.net names back to MagicDNS."""
+    suf = (json.loads(run([TAILSCALE, "status", "--json"])[1] or "{}").get("CurrentTailnet") or {}).get("MagicDNSSuffix")
+    if not suf:
+        return
+    ups = agh("dns_info").get("upstream_dns") or []
+    rule = f"[/{suf}/]100.100.100.100"
+    if rule not in ups:
+        agh("dns_config", "POST", {"upstream_dns": ups + [rule]})
+
+
 def build_xray_config(data):
     owner = sorted(OWNERS)[0]
     clients = [{"id": data["sr_owner"]["id"], "email": owner}]
     rules = [
         {"type": "field", "inboundTag": ["api"], "outboundTag": "api"},
+        # Xray's own lookups go to AdGuard on this Mac (ads blocked for everyone); must come before the local-address block
+        {"type": "field", "inboundTag": ["dns-internal"], "outboundTag": "direct"},
         {"type": "field", "outboundTag": "block", "ip": blocked_ips()},
         {"type": "field", "outboundTag": "block", "domain": ["localhost", "domain:ts.net", "domain:local"]},
     ]
@@ -1429,7 +1465,8 @@ def build_xray_config(data):
             {"tag": "public", "protocol": "freedom", "settings": {"domainStrategy": "UseIPv4"}},
             {"tag": "owner-tailnet", "protocol": "freedom", "settings": {"redirect": f"{data.get('sr_mac_ip') or '127.0.0.1'}:0"}},
         ],
-        "dns": {"servers": ([{"address": "1.1.1.1", "domains": [f"full:{host}"]}] if host else []) + ["localhost"]},
+        "dns": {"tag": "dns-internal",
+                "servers": ([{"address": "1.1.1.1", "domains": [f"full:{host}"]}] if host else []) + ["127.0.0.1", "localhost"]},
         "routing": {"domainStrategy": "IPIfNonMatch", "rules": rules},
     }
 
@@ -1572,6 +1609,7 @@ def security_checks():
         out.append(_chk("dns", "擋廣告 DNS 只服務自己人", "ok" if good else "warn", "只接受本機和 Tailscale" if good else "任何人都能查詢（可能被拿去做 DNS 放大攻擊）"))
     except Exception as e:
         out.append(_chk("dns", "擋廣告 DNS 只服務自己人", "unknown", f"讀不到 AdGuard：{e}"))
+    out.append(tailnet_dns_check())
     srv = run([TAILSCALE, "serve", "status"])[1]
     funnels = re.findall(r"https://\S+?:(\d+) \(Funnel on\)", srv)
     out.append(_chk("funnel", "對網路公開的入口", "ok" if funnels == ["8443"] else "warn",
@@ -3319,6 +3357,7 @@ if __name__ == "__main__":
             pass
     threading.Thread(target=warm, daemon=True).start()
     threading.Thread(target=lambda: safe(lambda: cached("sec-checks", 60, security_checks)), daemon=True).start()
+    threading.Thread(target=lambda: safe(ensure_agh_tailnet_names), daemon=True).start()
     security.configure(on_ban=lambda ip, why: notify.send("security", "自動封鎖了一個可疑位址", f"{ip}：{why}，封鎖 24 小時", "/#settings", urgent=True))
     threading.Thread(target=BoundedServer((PORTAL_HOST, PORTAL_PORT), PortalHandler, limit=96).serve_forever, daemon=True).start()
     try:

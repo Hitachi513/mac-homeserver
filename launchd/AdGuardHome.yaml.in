@@ -27,7 +27,9 @@ dns:
   ratelimit: 20
   ratelimit_subnet_len_ipv4: 24
   ratelimit_subnet_len_ipv6: 56
-  ratelimit_whitelist: []
+  ratelimit_whitelist:  # Xray (Shadowrocket) looks everything up from here
+    - 127.0.0.1
+    - ::1
   refuse_any: true
   upstream_dns:
     - https://dns.cloudflare.com/dns-query
@@ -120,8 +122,18 @@ filters:
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
     name: AdAway Default Blocklist
     id: 2
+  - enabled: true
+    url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt
+    name: "HaGeZi Pro（更完整的廣告和追蹤名單）"
+    id: 3
 whitelist_filters: []
-user_rules: []
+user_rules:
+  - "! Spotify 廣告（只擋得掉一部分，音訊廣告和音樂走同一個網址）"
+  - "||adeventtracker.spotify.com^"
+  - "||ads-fa.spotify.com^"
+  - "||analytics.spotify.com^"
+  - "||adstudio-assets.scdn.co^"
+  - "||pubads.g.doubleclick.net^"
 dhcp:
   enabled: false
   interface_name: ""

@@ -1,5 +1,16 @@
 # 更新紀錄
 
+## v1.3.0
+- 🛡️ 擋廣告名單加上 HaGeZi Pro（多約 22 萬條廣告和追蹤網址），並擋掉 Spotify 的廣告追蹤網址（新安裝預設就有；已安裝的人可在 AdGuard → 過濾器 → DNS 封鎖清單自己加）
+- 🛡️ 修正：開著 Tailscale 的裝置（包括 Mac 自己）其實沒有經過 AdGuard，所以廣告擋不掉
+  - 所有成員一律可以用擋廣告 DNS（不用再個別勾選）
+  - Shadowrocket 的查詢也改走 AdGuard
+  - 安全頁新增檢查「Tailscale 裝置都經過擋廣告」，沒設好會告訴你怎麼設
+  - Mac 自己改成直接用 AdGuard，家裡其他裝置的 `.ts.net` 名字會自動轉給 Tailscale 查
+  - **需要你做一次**：
+    1. Tailscale 後台 → DNS → Global nameservers → Add nameserver → Custom，填 Mac 的 Tailscale IP，再打開「Override DNS servers」
+    2. Mac 終端機：`networksetup -setdnsservers Wi-Fi 127.0.0.1 ::1 && tailscale set --accept-dns=false`（Tailscale 的 DNS 沒辦法轉給自己，不改 Mac 會查不到網址）
+
 ## v1.2.1
 - GitHub 回報和資安私下回報改成每 5 分鐘檢查一次（原本 10 分鐘）
 
