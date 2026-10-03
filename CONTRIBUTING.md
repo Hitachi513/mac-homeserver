@@ -52,4 +52,25 @@
 歡迎發 Pull Request！請：
 - 一個 PR 只修一件事，說明改了什麼、為什麼
 - 不要把任何個人資料、`config.json`、成員資料放進去（`.gitignore` 預設會擋）
-- 介面文字用繁體中文
+- 介面文字用繁體中文寫；改完執行 `python3 tools/i18n_extract.py`，再把新句子的翻譯補進 `dashboard/i18n/strings.json`（`--check` 會列出還缺的）
+
+---
+
+## English
+
+Thanks for taking the time to report! Where to go:
+
+- 🐞 **Bug / install failed / differs from the docs** → [bug report](https://github.com/Hitachi513/mac-homeserver/issues/new?template=bug_report.yml)
+- 💡 **Feature or improvement** → [feature request](https://github.com/Hitachi513/mac-homeserver/issues/new?template=feature_request.yml)
+- 🔒 **Security vulnerability** → **don't open a public issue**; use a [private report](https://github.com/Hitachi513/mac-homeserver/security/advisories/new) (only maintainers can see it)
+- 🙋 **Not used to GitHub?** In your control panel → Members → Reports → **Report to the system author**: it collects the details, hides personal data and opens a pre-filled page
+
+**Before reporting:** search the [issues](https://github.com/Hitachi513/mac-homeserver/issues?q=is%3Aissue); update with `cd ~/homeserver && git pull` and restart the panel;
+and **hide personal data** (issues are public): your `*.ts.net` address, IPs, member names and emails, secret page addresses (`/p/…/`), passwords, including in screenshots.
+
+**A good report has:** what happened vs. what you expected; steps to reproduce; your version (`git describe --tags`), macOS and chip (`sw_vers -productVersion; uname -m`)
+and the device/browser; optionally the last lines of `~/homeserver/dashboard/panel.log` (check for personal data first) and screenshots.
+
+**Pull requests** are welcome: one change per PR, explain what and why, never commit personal data (`.gitignore` is an allow-list).
+UI text is written in Traditional Chinese; run `python3 tools/i18n_extract.py` and add the translations for new sentences to
+`dashboard/i18n/strings.json` (`--check` lists what's missing).

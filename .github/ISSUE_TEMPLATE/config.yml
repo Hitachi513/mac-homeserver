@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 🔒 回報安全漏洞（私下）
+  - name: 🔒 回報安全漏洞（私下）/ Report a vulnerability privately
     url: https://github.com/Hitachi513/mac-homeserver/security/advisories/new
-    about: 安全問題請私下回報，不要開公開的 issue
-  - name: 📖 給家人看的使用教學
+    about: 安全問題請私下回報，不要開公開的 issue / Please report security issues privately, not as a public issue
+  - name: 📖 給家人看的使用教學 / Family guide (Chinese)
     url: https://hitachi513.github.io/home-guide/
     about: 怎麼連線、怎麼用雲端、常見問題

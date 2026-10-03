@@ -38,3 +38,28 @@
 4. 其他欄位可以不填，按最下面的 **Submit report**
 
 維護者會收到通知，通常幾天內會在同一頁回覆你。修好後會發新版本，並在版本說明裡感謝你（如果你願意）。
+
+---
+
+## English
+
+**Trust model.** The control panel (`127.0.0.1:8088`, published with `tailscale serve :443`) is reachable only from your tailnet. It trusts the
+`Tailscale-User-Login` header only after checking with `netstat` that the connection really comes from the Tailscale process, so other local
+programs (e.g. someone tunnelling through a proxy) can't forge it; you also get a push when that happens. A 4-digit PIN / Face ID (WebAuthn)
+lock follows. Member pages (`:8443/p/<token>` via Funnel) are public and trust only the 128-bit random token in the address, never identity
+headers. Share links can add a password (PBKDF2), expiry and a download limit. The optional Shadowrocket gateway gives each person their own
+VLESS UUID, and Xray blocks every private, tailnet and local address.
+
+**Built in.** Rate limiting and 24-hour automatic bans for repeated guessing (with a push), slowloris protection and connection caps, 1 MB JSON
+limit, HSTS / CSP / `X-Frame-Options: DENY` / `nosniff`, CSRF checks on `Origin` / `Sec-Fetch-Site`, path checks after `realpath` in the
+cloud, HTML / SVG always served as downloads with `CSP: sandbox`, secret files with mode 600 and an allow-list `.gitignore`, and Tailscale ACLs
+that let only the owner open Funnel. The Windows remote agent pairs with a one-time code, then uses a token bound to the Tailscale account it
+paired from, and runs only a fixed list of commands.
+
+**Recommended.** `sudo bash security/harden.sh` (packet filter so SSH, file sharing, screen sharing, AirPlay and DNS are reachable only through
+Tailscale), turn on FileVault (after a power cut the Mac then needs its password before the services come back), and update AdGuard Home and Xray now and then.
+
+**Reporting a vulnerability.** Please **don't open a public issue** or discuss details publicly. Report it privately at
+<https://github.com/Hitachi513/mac-homeserver/security/advisories/new> (needs a GitHub sign-in): a one-line **Title**, and in **Description**
+what happens, the impact and ideally steps to reproduce, then **Submit report**. You'll usually get a reply on the same page within a few days;
+the fix ships in a new release, with credit if you'd like.

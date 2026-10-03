@@ -20,6 +20,7 @@ import threading
 import uuid as uuidlib
 
 import applock
+import i18n
 import winagent
 import drive
 import notify
@@ -537,7 +538,7 @@ def action(name, arg, who):
         return {"ok": code == 0, "error": err.strip()}
     if name == "win_pair":
         log_event(who, "產生 Windows 遙控配對碼")
-        return {"ok": True, **winagent.new_code()}
+        return {"ok": True, **winagent.new_code(arg.get("lang") if arg.get("lang") in i18n.LANGS else "zh-TW")}
     if name == "win_cmd":
         aid, cmd = str(arg.get("id", "")), str(arg.get("cmd", ""))
         r = winagent.send(aid, cmd, arg.get("arg") or {}, timeout=25 if cmd == "screenshot" else 15)
@@ -611,6 +612,10 @@ def action(name, arg, who):
         save_secrets(sec)
         log_event(who, "更新踢人設定")
         return {"ok": True, **kick_status()}
+    if name == "set_lang":
+        if arg.get("lang") in i18n.LANGS:
+            notify.set_lang(arg["lang"])
+        return {"ok": True}
     if name == "notify_pref":
         notify.set_pref(arg.get("kind"), arg.get("on"))
         return {"ok": True}
@@ -1923,6 +1928,33 @@ def portal_rotate(login, who):
     return {"ok": True, "url": portal_url(p["portal"])}
 
 
+def page_lang(handler):
+    """Language for a page: the visitor's own choice (cookie), else their browser's languages."""
+    lang = None
+    for part in (handler.headers.get("Cookie") or "").split(";"):
+        k, _, v = part.strip().partition("=")
+        if k == "lang":
+            lang = urllib.parse.unquote(v)
+    return i18n.pick(lang, handler.headers.get("Accept-Language"))
+
+
+def with_i18n(page, lang, base):
+    """Insert the language script (cached forever: its name changes with the dictionary) and translate the
+    few things the browser can't (the home-screen app name)."""
+    page = page.replace("<!--I18N-->", f'<script src="{base}{i18n.script_name(lang)}"></script>', 1)
+    return re.sub(r'(name="apple-mobile-web-app-title" content=")([^"]*)"', lambda m: m.group(1) + i18n.t(m.group(2), lang) + '"', page)
+
+
+def send_i18n_script(handler, lang):
+    body = i18n.script(lang)
+    handler.send_response(200)
+    handler.send_header("Content-Type", "text/javascript; charset=utf-8")
+    handler.send_header("Cache-Control", "public, max-age=31536000, immutable")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
 class PortalHandler(BaseHTTPRequestHandler):
     """Public, read-only. Never trusts Tailscale identity headers — only the secret token in the URL."""
     server_version = "home"
@@ -2020,6 +2052,8 @@ class PortalHandler(BaseHTTPRequestHandler):
             return
         rest = parts[1:]
         open_routes = ([], ["icon.png"], ["qrcode.js"], ["drive.js"], ["lockinfo"], ["avatar.jpg"])
+        if len(rest) == 1 and i18n.parse_script_name(rest[0]):
+            return send_i18n_script(self, i18n.parse_script_name(rest[0]))
         if rest not in open_routes and self.portal_locked(p):
             return self.send_json({"ok": False, "locked": True, "error": "請先輸入密碼"}, 401)
         try:
@@ -2039,7 +2073,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                 with open(os.path.join(HERE, "index.html"), encoding="utf-8") as f:
                     idx = f.read()
                 style = idx[idx.index("<style>") + 7:idx.index("</style>")]
-                self.send_body(page.replace("/*SHARED_STYLE*/", style).encode(), "text/html; charset=utf-8")
+                self.send_body(with_i18n(page.replace("/*SHARED_STYLE*/", style), page_lang(self), "").encode(), "text/html; charset=utf-8")
             elif rest == ["bugs"]:
                 items = bugs.mine(p["login"])
                 bugs.mark_seen(p["login"])
@@ -2258,7 +2292,9 @@ class PortalHandler(BaseHTTPRequestHandler):
             with open(os.path.join(HERE, "index.html"), encoding="utf-8") as f:
                 idx = f.read()
             style = idx[idx.index("<style>") + 7:idx.index("</style>")]
-            return self.send_body(page.replace("/*SHARED_STYLE*/", style).encode(), "text/html; charset=utf-8")
+            return self.send_body(with_i18n(page.replace("/*SHARED_STYLE*/", style), page_lang(self), "").encode(), "text/html; charset=utf-8")
+        if i18n.parse_script_name(op):
+            return send_i18n_script(self, i18n.parse_script_name(op))
         if op in ("qrcode.js", "drive.js", "icon.png"):
             fn = "icon-180.png" if op == "icon.png" else op
             with open(os.path.join(HERE, "static", fn), "rb") as f:
@@ -2864,7 +2900,7 @@ def monitor_tick():
     m = re.search(r"(\d+)%", batt)
     if m and "AC Power" not in batt and int(m.group(1)) <= 20:
         if not MON["battery_warned"]:
-            notify.send("battery", "Mac 電量剩 " + m.group(1) + "%", "請幫 Mac 插上電源，沒電後家裡的網路和雲端都會斷線", "/", urgent=True)
+            notify.send("battery", f"Mac 電量剩 {m.group(1)}%", "請幫 Mac 插上電源，沒電後家裡的網路和雲端都會斷線", "/", urgent=True)
             MON["battery_warned"] = True
     elif "AC Power" in batt:
         MON["battery_warned"] = False
@@ -3049,8 +3085,8 @@ class Handler(BaseHTTPRequestHandler):
         if u.path in ("/", "/index.html"):
             if not self.authed():
                 return
-            with open(os.path.join(HERE, "index.html"), "rb") as f:
-                body = f.read()
+            with open(os.path.join(HERE, "index.html"), encoding="utf-8") as f:
+                body = with_i18n(f.read(), page_lang(self), "/static/").encode()
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
@@ -3069,6 +3105,10 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
+        if u.path.startswith("/static/i18n-") and i18n.parse_script_name(os.path.basename(u.path)):
+            if not self.authed():
+                return
+            return send_i18n_script(self, i18n.parse_script_name(os.path.basename(u.path)))
         if u.path.startswith("/static/"):
             name = os.path.basename(u.path)
             path = os.path.join(HERE, "static", name)
@@ -3275,7 +3315,7 @@ class Handler(BaseHTTPRequestHandler):
                 if self.role != "owner":
                     return self.send_json({"ok": False, "error": "只有管理員可以收通知"}, 403)
                 body = self.read_json()
-                notify.subscribe(body.get("subscription"), body.get("device"))
+                notify.subscribe(body.get("subscription"), body.get("device"), page_lang(self))
                 log_event(self.who(), f"開啟推播通知（{body.get('device') or '裝置'}）")
                 return self.send_json({"ok": True})
             if u.path == "/api/speed/up":
@@ -3325,8 +3365,9 @@ class Handler(BaseHTTPRequestHandler):
                 host = (self.headers.get("Host") or "").split(":")[0]
                 if not winagent.code_ok(code) or not re.match(r"^[A-Za-z0-9.-]+$", host):
                     security.record("agent_bad", None, "配對碼錯誤", who=login)
-                    return self.send_ps1("Write-Host '配對碼錯誤或已過期，請在控制台重新產生' -ForegroundColor Red\n", 403)
-                return self.send_ps1(winagent.script("install", host=host, code=code))
+                    # PowerShell sends no language, so say it in both
+                    return self.send_ps1("Write-Host 'Wrong or expired pairing code. Make a new one in the control panel. / 配對碼錯誤或已過期，請在控制台重新產生' -ForegroundColor Red\n", 403)
+                return self.send_ps1(winagent.script("install", host=host, code=code, lang=winagent.code_lang(code)))
             if method == "POST" and u.path == "/agent/pair":
                 body = self.read_json()
                 try:
@@ -3344,7 +3385,7 @@ class Handler(BaseHTTPRequestHandler):
                 security.record("agent_bad", None, "遙控金鑰錯誤", who=login)
                 return self.send_json({"ok": False, "error": "unknown agent"}, 401)
             if method == "GET" and u.path == "/agent/agent.ps1":
-                return self.send_ps1(winagent.script("agent"))
+                return self.send_ps1(winagent.script("agent", lang=winagent.lang_of(aid)))
             if method == "POST" and u.path == "/agent/sync":
                 return self.send_json(winagent.sync(aid, self.read_json(limit=8 << 20)))  # screenshots ride along
         except ValueError as e:

@@ -6,6 +6,7 @@
 !.github/ISSUE_TEMPLATE/
 !.github/ISSUE_TEMPLATE/*.yml
 !README.md
+!README.en.md
 !CHANGELOG.md
 !LICENSE
 !THIRD_PARTY_NOTICES.md
@@ -29,8 +30,13 @@
 !dashboard/share.html
 !dashboard/winagent/
 !dashboard/winagent/*.ps1
+!dashboard/i18n/
+!dashboard/i18n/strings.json
+!tools/
+!tools/i18n_extract.py
 !dashboard/static/
 !dashboard/static/drive.js
+!dashboard/static/i18n.js
 !dashboard/static/sw.js
 !dashboard/static/manifest.json
 !dashboard/static/qrcode.js

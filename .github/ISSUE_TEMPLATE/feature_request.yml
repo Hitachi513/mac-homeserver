@@ -1,17 +1,17 @@
-name: 💡 建議新功能
-description: 想要多一個功能，或某個地方可以更好用
+name: 💡 建議新功能 / Feature request
+description: 想要多一個功能，或某個地方可以更好用 / A new feature, or something that could work better
 title: "[建議] "
 labels: ["enhancement"]
 body:
   - type: textarea
     id: want
     attributes:
-      label: 你想要什麼？
-      description: 用你自己的話說就好，例如「希望雲端可以一次下載整個相簿」
+      label: 你想要什麼？ / What would you like?
+      description: 用你自己的話說就好，例如「希望雲端可以一次下載整個相簿」 / In your own words
     validations:
       required: true
   - type: textarea
     id: why
     attributes:
-      label: 為什麼需要？
-      description: 你遇到什麼情況，讓你想要這個功能
+      label: 為什麼需要？ / Why do you need it?
+      description: 你遇到什麼情況，讓你想要這個功能 / What situation made you want this

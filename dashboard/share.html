@@ -2,6 +2,9 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<!--I18N-->
+<script>/* if the language script didn't load, keep working in Chinese */
+if (!window.I18N) window.I18N = { lang: "zh-TW", locale: "zh-TW", t: (s, v) => v ? String(s).replace(/\{(\d+)\}/g, (x, n) => v[n - 1] ?? x) : s, weekdays: () => [..."一二三四五六日"], set() {} };</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#eef1f8">
@@ -18,6 +21,7 @@ main { max-width: 760px; }
 <header>
   <span class="dot on"></span>
   <div class="titles"><h1 id="title">分享的檔案</h1><div class="subtitle" id="sub"></div></div>
+  <label class="theme-btn langbtn" translate="no" title="Language / 語言"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg><select data-langpick aria-label="Language / 語言"></select></label>
 </header>
 <main><div class="stack" id="app"><div class="card"><div class="skel"><i></i><i></i><i></i></div></div></div></main>
 <div class="toast" id="toast"></div>
@@ -60,7 +64,7 @@ async function load() {
   if (!r.ok) { $("#app").innerHTML = `<div class="card"><div class="empty">${icon("alert")} 這個分享連結不存在，或已經被取消</div></div>`; return; }
   const d = await r.json();
   $("#title").textContent = d.name; document.title = d.name;
-  $("#sub").textContent = `${esc(d.creator)} 分享給你` + (d.expires ? `・${new Date(d.expires * 1000).toLocaleDateString("zh-TW")} 前有效` : "") + (d.left != null ? `・還能下載 ${d.left} 次` : "");
+  $("#sub").textContent = `${esc(d.creator)} 分享給你` + (d.expires ? `・${new Date(d.expires * 1000).toLocaleDateString(I18N.locale)} 前有效` : "") + (d.left != null ? `・還能下載 ${d.left} 次` : "");
   if (d.dead) { $("#app").innerHTML = `<div class="card"><div class="empty">${icon("alert")} ${esc(d.dead)}</div></div>`; return; }
   if (d.locked) {
     $("#app").innerHTML = `<div class="card center"><span class="badge" style="--c:#5e5ce6;width:56px;height:56px;border-radius:16px;font-size:26px;margin:6px auto 10px;display:grid">${icon("lock")}</span>

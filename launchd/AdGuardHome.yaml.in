@@ -124,7 +124,7 @@ filters:
     id: 2
   - enabled: true
     url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt
-    name: "HaGeZi Pro（更完整的廣告和追蹤名單）"
+    name: HaGeZi Pro
     id: 3
 whitelist_filters: []
 user_rules:

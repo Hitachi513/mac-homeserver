@@ -17,6 +17,8 @@ from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
+import i18n
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATE = os.path.join(HERE, "notify.json")   # VAPID key, subscriptions, prefs (mode 600)
 LOG = os.path.join(HERE, "notify-log.json")  # recent notifications shown in the bell menu
@@ -83,7 +85,7 @@ def public_key():
     return b64u(pub)
 
 
-def subscribe(sub, device):
+def subscribe(sub, device, lang="zh-TW"):
     if not isinstance(sub, dict) or not str(sub.get("endpoint", "")).startswith("https://"):
         raise ValueError("訂閱資料不正確")
     keys = sub.get("keys") or {}
@@ -93,7 +95,16 @@ def subscribe(sub, device):
         st = state()
         st["subs"] = [s for s in st["subs"] if s["endpoint"] != sub["endpoint"]]
         st["subs"].append({"endpoint": sub["endpoint"], "keys": {"p256dh": keys["p256dh"], "auth": keys["auth"]},
-                           "device": str(device or "裝置")[:40], "added": time.time()})
+                           "device": str(device or "裝置")[:40], "added": time.time(), "lang": lang})
+        _save(STATE, st)
+
+
+def set_lang(lang):
+    """The owner switched language: later pushes follow."""
+    with _lock:
+        st = state()
+        for s in st["subs"]:
+            s["lang"] = lang
         _save(STATE, st)
 
 
@@ -171,7 +182,8 @@ def send(kind, title, body, url="/", urgent=False):
     def work():
         dead = []
         for sub in st["subs"]:
-            code = _push(st, sub, {"title": title, "body": body, "url": url, "kind": kind, "urgent": urgent})
+            lang = sub.get("lang") or "zh-TW"  # each phone gets the notification in its own language
+            code = _push(st, sub, {"title": i18n.t(title, lang), "body": i18n.t(body, lang), "url": url, "kind": kind, "urgent": urgent})
             if code in (404, 410):  # subscription gone (app deleted / permission revoked)
                 dead.append(sub["endpoint"])
         if dead:

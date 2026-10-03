@@ -2,6 +2,9 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<!--I18N-->
+<script>/* if the language script didn't load, keep working in Chinese */
+if (!window.I18N) window.I18N = { lang: "zh-TW", locale: "zh-TW", t: (s, v) => v ? String(s).replace(/\{(\d+)\}/g, (x, n) => v[n - 1] ?? x) : s, weekdays: () => [..."一二三四五六日"], set() {} };</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -124,6 +127,10 @@ header h1 { font-size: 20px; margin: 0; flex: 1; letter-spacing: -.3px; font-wei
 .theme-btn { font: inherit; border: 1px solid var(--glass-border); background: var(--fill); color: var(--text);
   width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; font-size: 17px;
   box-shadow: var(--inner); }
+/* language picker: a native <select> laid invisibly over the globe, so the phone shows its own picker */
+.langbtn { position: relative; overflow: hidden; }
+.langbtn select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; cursor: pointer; -webkit-appearance: none; appearance: none; }
+.langbtn .ico { width: 18px; height: 18px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); display: inline-block; flex: none; }
 .dot.on { background: var(--good); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 25%, transparent); }
 .dot.off { background: var(--bad); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 25%, transparent); }
@@ -148,6 +155,7 @@ nav button {
   transition: background .25s, color .25s, transform .15s;
 }
 nav button:active { transform: scale(.94); }
+nav button .nl { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 nav button .i { font-size: 20px; line-height: 1.15; filter: grayscale(.85); opacity: .75; transition: .25s; }
 nav button.active { color: var(--accent); background: var(--glass-strong); box-shadow: var(--inner), 0 2px 10px rgba(0,0,0,.08); }
 nav button.active .i { filter: none; opacity: 1; transform: translateY(-1px); }
@@ -173,6 +181,8 @@ section[data-tab].show { display: block; }
 .row .grow { flex: 1; min-width: 0; }
 .row .t { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row .s { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a member's name and their shared-folder pill: let the pill drop below a long name instead of running off */
+.usage-row .t { white-space: normal; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 .pill { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--fill); color: var(--text-2); white-space: nowrap; }
 .pill.good { color: var(--good-ink); background: color-mix(in srgb, var(--good) 16%, transparent); }
 .pill.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
@@ -385,8 +395,12 @@ nav button.active .i .ico { stroke-width: 2.3; }
 .win-cmd { font: 13px/1.5 ui-monospace, Menlo, monospace; background: var(--fill); border-radius: 12px; padding: 10px 12px; overflow-wrap: anywhere; user-select: all; -webkit-user-select: all; }
 .win-steps { margin: 0; padding-left: 20px; line-height: 1.75; }
 #rmSeg button .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; background: var(--text-3, #8e8e93); }
-#rmSeg button .dot.on { background: var(--good, #30d158); }
-#rmSeg button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#rmSeg button .dot.live { background: var(--good, #30d158); }
+#rmSeg { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+#rmSeg::-webkit-scrollbar { display: none; }
+#rmSeg button { flex: 1 0 auto; max-width: 11em; padding-left: 12px; padding-right: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#rmSeg button[data-rm="mac"], #rmSeg button[data-rm="add"] { flex-grow: 0; min-width: 3.4em; }
+@media (max-width: 360px) { .win-stats .v { font-size: 14px; } .win-stats > div { padding: 7px 9px; } }
 .qbtn { position: relative; font: inherit; text-align: left; text-decoration: none; color: var(--text); cursor: pointer;
   display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 20px;
   background-color: var(--glass); background-image: var(--sheen); border: 1px solid var(--glass-border);
@@ -525,6 +539,7 @@ header .subtitle { font-size: 12.5px; color: var(--muted); font-weight: 600; mar
 .ringbox .val { stroke: var(--c); transition: stroke-dasharray .6s cubic-bezier(.2,.8,.2,1); }
 .ringbox .rv { position: absolute; inset: 0; display: grid; place-items: center; font-size: 21px; font-weight: 800; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
 .ringbox .rv.small { font-size: 14px; }
+.ringbox .rv.xs { font-size: 12px; line-height: 1.15; padding: 0 16px; text-align: center; }
 .tile.ring .rl { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13.5px; font-weight: 700; }
 .tile.ring .rl .badge { width: 20px; height: 20px; border-radius: 6px; font-size: 12px; }
 .tile.ring .sub { margin-top: 2px; }
@@ -755,6 +770,7 @@ html.no-sr .feat-sr { display: none !important; }
   <span class="dot" id="liveDot"></span>
   <div class="titles"><h1 id="pageTitle">首頁</h1><div class="subtitle" id="pageSub"></div></div>
   <button class="theme-btn bell" id="bellBtn" hidden aria-label="通知"><i data-ic="bell"></i><span class="bell-dot" id="bellDot" hidden></span></button>
+  <label class="theme-btn langbtn" translate="no" title="Language / 語言"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg><select data-langpick aria-label="Language / 語言"></select></label>
   <button class="theme-btn" id="themeBtn" title="切換深色 / 淺色" aria-label="切換深色 / 淺色"></button>
   <span class="me" id="me"></span>
 </header>
@@ -1096,11 +1112,11 @@ html.no-sr .feat-sr { display: none !important; }
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const fmtN = n => (n ?? 0).toLocaleString("zh-TW");
+const fmtN = n => (n ?? 0).toLocaleString(I18N.locale);
 const fmtB = b => { if (b == null) return "—"; const u = ["B","KB","MB","GB","TB"]; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return (i ? b.toFixed(1) : b) + " " + u[i]; };
-const fmtDur = s => { const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return (d ? d + " 天 " : "") + (h ? h + " 小時 " : "") + m + " 分"; };
+const fmtDur = s => { const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return [d && I18N.t("{1} 天", [d]), h && I18N.t("{1} 小時", [h]), I18N.t("{1} 分", [m])].filter(Boolean).join(" "); };
 const ago = t => { if (!t) return "—"; const s = (Date.now() - (typeof t === "number" ? t * 1000 : Date.parse(t))) / 1000;
-  if (s < 0 || isNaN(s)) return "—"; if (s < 60) return "剛剛"; if (s < 3600) return Math.floor(s / 60) + " 分鐘前"; if (s < 86400) return Math.floor(s / 3600) + " 小時前"; return Math.floor(s / 86400) + " 天前"; };
+  if (s < 0 || isNaN(s)) return "—"; if (s < 60) return "剛剛"; if (s < 3600) return I18N.t("{1} 分鐘前", [Math.floor(s / 60)]); if (s < 86400) return I18N.t("{1} 小時前", [Math.floor(s / 3600)]); return I18N.t("{1} 天前", [Math.floor(s / 86400)]); };
 const osIcon = os => icon({ macOS: "laptop", iOS: "phone", android: "phone", windows: "monitor", linux: "linux" }[os] || "plug");
 
 function toast(msg, ic) { const t = $("#toast"); t.innerHTML = (ic ? icon(ic) + " " : "") + esc(msg); t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2200); }
@@ -1266,14 +1282,17 @@ syncThemeColor();
 // ---------- tabs ----------
 const TABS = [["home","home","首頁"],["cloud","cloud","雲端"],["adblock","shield","擋廣告"],["remote","gamepad","遙控"],["members","users","成員"],["settings","settings","設定"]];
 const OLD_TAB = { devices: "settings", services: "settings", log: "adblock", files: "cloud" };
-$("#nav").innerHTML = TABS.map(([id, i, l]) => `<button data-go="${id}"><span class="i">${icon(i)}</span>${l}</button>`).join("");
-const WEEK = "日一二三四五六";
+// the bottom bar has ~50px per tab: some languages get a shorter word there ("選單：…" keys) than in the page title
+// ring tiles shrink their big number by the length of what is actually shown (translations are often longer)
+const ringSize = (v, n) => { const len = String(I18N.t(String(v))).replace(/<[^>]*>/g, "").length; return len > n + 4 ? "xs" : len > n ? "small" : ""; };
+const navLabel = l => { const k = "選單：" + l, v = I18N.t(k); return v === k ? l : v; };
+$("#nav").innerHTML = TABS.map(([id, i, l]) => `<button data-go="${id}"><span class="i">${icon(i)}</span><span class="nl">${navLabel(l)}</span></button>`).join("");
 function pageSub(tab) {
   const d = new Date();
-  if (tab === "home") return `${d.getMonth() + 1}月${d.getDate()}日 星期${WEEK[d.getDay()]}`;
+  if (tab === "home") return d.toLocaleDateString(I18N.locale, { month: "long", day: "numeric", weekday: "long" });
   if (tab === "cloud" && S && S.drive) return `${fmtB(S.drive.free)} 可用`;
   if (tab === "adblock" && S && S.adguard && S.adguard.ok) return S.adguard.protection ? `保護中・今天已擋 ${fmtN(S.adguard.blocked)} 筆` : "已暫停";
-  if (tab === "remote") return "控制家裡的 Mac";
+  if (tab === "remote") return typeof WIN !== "undefined" && WIN.pcs && WIN.pcs.length ? "控制家裡的 Mac 和電腦" : "控制家裡的 Mac";
   if (tab === "members") return "誰可以用、可以用什麼";
   if (tab === "settings") return "裝置、服務與安全";
   return "";
@@ -1340,7 +1359,7 @@ function renderMac(newHist) {
   const d = MAC; if (!d) return;
   const hw = d.hw || {}, b = d.battery, m = d.memory || {}, n = d.network || {}, th = d.thermal || {}, sys = (S && S.system) || {};
   $("#macHero").innerHTML = `${badge("laptop", "gray")}<div style="min-width:0"><div class="big">${esc(hw.name || "Mac")}</div>
-    <div class="small muted">${esc(hw.chip || "")}${hw.cores ? `・${hw.cores.total} 核心（${hw.cores.perf} 效能 + ${hw.cores.eff} 節能）` : ""}・${esc(hw.memory || "")} 記憶體</div>
+    <div class="small muted">${esc(hw.chip || "")}${hw.cores ? `<span>・${hw.cores.total} 核心（${hw.cores.perf} 效能 + ${hw.cores.eff} 節能）</span>` : ""}<span>・${esc(hw.memory || "")} 記憶體</span></div>
     <div class="small muted">macOS ${esc(hw.os || "")}・已開機 ${fmtDur(d.uptime_s || 0)}</div></div>`;
   const pres = { normal: ["good", "正常"], warn: ["warn", "偏高"], critical: ["bad", "很緊"] }[m.pressure] || ["good", "正常"];
   const therm = th.state === "throttled" ? ["bad", `過熱降速（${th.speed_limit}%）`] : th.state === "warm" ? ["warn", "偏熱"] : ["good", "正常"];
@@ -1397,7 +1416,7 @@ function renderMacTrends() {
   charts.forEach(([id, , ser, max, fmt]) => trendChart($("#" + id), pts, ser, max, fmt));
   const step = Math.max(1, Math.round(pts.length / 48));
   $("#macTable").innerHTML = `<table class="tbl"><tr><th>時間</th><th class="r">CPU</th><th class="r">記憶體</th><th class="r">下載</th><th class="r">上傳</th><th class="r">電量</th></tr>` +
-    pts.filter((_, i) => i % step === 0).reverse().map(p => `<tr><td>${new Date(p.t * 1000).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false })}</td><td class="r">${p.cpu}%</td><td class="r">${p.mem}%</td><td class="r">${fmtRate(p.rx)}</td><td class="r">${fmtRate(p.tx)}</td><td class="r">${p.bat ?? "—"}%</td></tr>`).join("") + `</table>`;
+    pts.filter((_, i) => i % step === 0).reverse().map(p => `<tr><td>${new Date(p.t * 1000).toLocaleTimeString(I18N.locale, { hour: "2-digit", minute: "2-digit", hour12: false })}</td><td class="r">${p.cpu}%</td><td class="r">${p.mem}%</td><td class="r">${fmtRate(p.rx)}</td><td class="r">${fmtRate(p.tx)}</td><td class="r">${p.bat ?? "—"}%</td></tr>`).join("") + `</table>`;
 }
 // one measure per chart (no dual axis); 2px lines, recessive grid, crosshair + tooltip on hover/touch
 function trendChart(el, raw, ser, fixedMax, fmt) {
@@ -1435,7 +1454,7 @@ function trendChart(el, raw, ser, fixedMax, fmt) {
     const p = pts[i], px = x(p.t);
     xh.setAttribute("x1", px); xh.setAttribute("x2", px); xh.setAttribute("visibility", "visible");
     ser.forEach(([k], j) => { const c = svg.querySelector(".dot" + j); if (p[k] == null) { c.setAttribute("visibility", "hidden"); return; } c.setAttribute("cx", px); c.setAttribute("cy", y(p[k])); c.setAttribute("visibility", "visible"); });
-    tip.innerHTML = `<b>${new Date(p.t * 1000).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false })}</b>　` + ser.map(([k, l]) => `${l} ${p[k] == null ? "—" : fmt(p[k])}`).join("・");
+    tip.innerHTML = `<b>${new Date(p.t * 1000).toLocaleTimeString(I18N.locale, { hour: "2-digit", minute: "2-digit", hour12: false })}</b>　` + ser.map(([k, l]) => `${l} ${p[k] == null ? "—" : fmt(p[k])}`).join("・");
     tip.hidden = false; const tw = tip.offsetWidth / 2 + 2;  // keep the whole bubble on screen, even at the chart's edges
     tip.style.left = Math.min(Math.max(px * sx, tw), box.width - tw) + "px"; tip.style.top = (y(Math.max(...ser.map(([k]) => p[k] || 0))) * sx) + "px";
   };
@@ -1509,6 +1528,10 @@ var S = null;  // var, not let: the tab restore at startup reads it before this 
 const TAB_CAP = { home: null, cloud: "owner", adblock: ["adblock", "log"], remote: ["remote", "screen"], members: "owner", settings: null };
 const PANE_CAP = { "ad-overview": "adblock", "ad-rules": "adblock", "ad-log": "log", "set-devices": "view", "set-services": "owner", "set-security": null, "set-notify": "owner", "set-mac": "view" };
 function applyRole(me) {
+  // push notifications follow the language the owner picked here
+  if (me.role === "owner") { let sent = null; try { sent = localStorage.getItem("lang-push"); } catch {}
+    if (sent !== I18N.lang) api("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: "set_lang", arg: { lang: I18N.lang } }) })
+      .then(() => { try { localStorage.setItem("lang-push", I18N.lang); } catch {} }).catch(() => {}); }
   document.documentElement.classList.toggle("no-sr", !!(S && S.features && !S.features.shadowrocket));
   const caps = new Set(me.caps || []), owner = me.role === "owner";
   const allowed = id => { const c = TAB_CAP[id]; if (c === null) return true; if (c === "owner") return owner; return [].concat(c).some(x => caps.has(x)); };
@@ -1596,7 +1619,7 @@ function render(d) {
     ...(k.api_saved_at ? [["Token 到期", (() => { const left = Math.ceil((k.api_saved_at + 90 * 86400 - Date.now() / 1000) / 86400);
       return left > 7 ? `約 ${left} 天後` : `<span class="pill bad">剩 ${Math.max(left, 0)} 天，記得換新的</span>`; })()]] : []),
     ["踢人密碼", k.has_password ? PILLOK + '已設定</span>' : '<span class="pill bad">未設定</span>'],
-    ...(k.locked_until ? [["狀態", `<span class="pill bad">輸錯太多次，鎖到 ${new Date(k.locked_until * 1000).toLocaleTimeString("zh-TW")}</span>`]] : []),
+    ...(k.locked_until ? [["狀態", `<span class="pill bad">輸錯太多次，鎖到 ${new Date(k.locked_until * 1000).toLocaleTimeString(I18N.locale)}</span>`]] : []),
   ]);
   if (!k.has_api && !$("#kickSetup").dataset.touched) $("#kickSetup").open = true;
 
@@ -1604,7 +1627,7 @@ function render(d) {
   if (ag.ok) {
     const until = ag.protection_disabled_until;
     $("#protText").innerHTML = ag.protection ? icon("shield") + " 擋廣告保護中" : icon("pause") + " 已暫停";
-    $("#protSub").textContent = ag.protection ? `今天已擋 ${fmtN(ag.blocked)} 筆，共 ${fmtN(ag.queries)} 筆查詢` : (until ? `將在 ${new Date(until).toLocaleTimeString("zh-TW")} 自動恢復` : "手動關閉中");
+    $("#protSub").textContent = ag.protection ? `今天已擋 ${fmtN(ag.blocked)} 筆，共 ${fmtN(ag.queries)} 筆查詢` : (until ? `將在 ${new Date(until).toLocaleTimeString(I18N.locale)} 自動恢復` : "手動關閉中");
     $("#protSwitch").checked = !!ag.protection;
     barList($("#topBlocked"), ag.top_blocked || [], "blocked");
     barList($("#topQueried"), ag.top_queried || [], "queried");
@@ -1674,12 +1697,12 @@ function tile(label, value, sub, pct, hist) {
   const p = pct == null ? null : Math.max(0, Math.min(100, pct)), R = 40, L = 2 * Math.PI * R;
   return `<div class="card tile ring" style="--c:${C[c]}">
     <div class="ringbox"><svg viewBox="0 0 96 96"><circle class="trk" cx="48" cy="48" r="${R}"/>${p != null && p >= 0.5 ? `<circle class="val" cx="48" cy="48" r="${R}" stroke-dasharray="${(p / 100 * L).toFixed(1)} ${L.toFixed(1)}"/>` : ""}</svg>
-      <div class="rv ${String(value).length > 6 ? "small" : ""}">${value}</div></div>
+      <div class="rv ${ringSize(value, 6)}">${value}</div></div>
     <div class="rl">${badge(ic, c)}${label}</div><div class="sub">${sub || ""}</div>${hist ? spark(hist) : ""}</div>`;
 }
 function renderHero(d) {
   const h = new Date().getHours();
-  const hi = (h < 5 ? "夜深了" : h < 11 ? "早安" : h < 14 ? "午安" : h < 18 ? "下午好" : "晚安") + "，";
+  const hi = I18N.t("{1}，", [I18N.t(h < 5 ? "夜深了" : h < 11 ? "早安" : h < 14 ? "午安" : h < 18 ? "下午好" : "晚安")]);
   const nm = (d.me && (d.me.name || d.me.login)) || "";
   const pic = d.me && d.me.pic ? `<img class="avatar" src="${esc(d.me.pic)}" alt="">` : `<span class="avatar badge" style="--c:#5e5ce6;width:56px;height:56px;border-radius:50%;font-size:26px">${icon("user")}</span>`;
   if (!$("#hero .who")) $("#hero").insertAdjacentHTML("afterbegin", `<div class="who"><span id="heroPic"></span><div><div class="hi" id="heroHi2"></div><div class="name" id="heroName2"></div></div></div>`);
@@ -1813,7 +1836,7 @@ function personSummary(p) {
   if (p.exit) out.push("上網");
   p.services.forEach(k => { if (!(k === "panel" && p.caps.length)) out.push(d.services[k]); });  // "控制台 N 項" below already says it
   if (p.ports.length) out.push("port " + p.ports.join("/"));
-  if (p.devices.length) out.push(p.devices.length + " 台裝置");
+  if (p.devices.length) out.push(`${p.devices.length} 台裝置`);
   if (p.caps.length) out.push("控制台 " + p.caps.length + " 項");
   if (p.filter.on) out.push("有上網限制");
   if (p.expires) out.push("到 " + p.expires);
@@ -1963,7 +1986,7 @@ function reportHtml(r) {
 }
 $("#sheetDone").onclick = () => { memOpen = null; $("#memSheet").hidden = true; };
 $("#memSheet").onclick = e => { if (e.target.id === "memSheet") $("#sheetDone").onclick(); };
-const WEEKDAYS = "一二三四五六日";
+const WEEKDAYS = I18N.weekdays();
 function setPath(o, path, v) { const k = path.split("."); let x = o; while (k.length > 1) x = x[k.shift()]; x[k[0]] = v; }
 function getPath(o, path) { return path.split(".").reduce((x, k) => x[k], o); }
 function touch(p) { delete p.new; memDirty = true; renderMembers(); }
@@ -2179,7 +2202,7 @@ function renderSec() {
     : st.results.length ? `<div class="small muted" style="margin-bottom:4px">${ago(st.at)}測試・${st.results.filter(r => r.ok).length}/${st.results.length} 項擋下</div>` +
       st.results.map(r => `<div class="chk"><span class="ic ${r.ok ? "ok" : "bad"}">${icon(r.ok ? "tick" : "x")}</span><div class="grow"><div class="t">${esc(r.name)}<span class="sr-only">${r.ok ? "已擋下" : "沒擋下"}</span></div><div class="s">${esc(r.desc)}・${esc(r.detail)}</div></div></div>`).join("")
     : `<div class="small muted">用攻擊者的手法打一次自己的伺服器（猜網址、路徑穿越、慢速連線、超大請求、跨站、偽造身分…），確認每一道防線都還在。按上面的「自我攻擊測試」開始。</div>`;
-  $("#secBans").innerHTML = d.bans.length ? d.bans.map(b => `<div class="row"><div class="grow"><div class="t ip" style="font-family:ui-monospace,Menlo,monospace">${esc(b.ip)}</div><div class="s">${esc(b.reason)}・${new Date(b.until * 1000).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })} 解除</div></div>
+  $("#secBans").innerHTML = d.bans.length ? d.bans.map(b => `<div class="row"><div class="grow"><div class="t ip" style="font-family:ui-monospace,Menlo,monospace">${esc(b.ip)}</div><div class="s">${esc(b.reason)}・${new Date(b.until * 1000).toLocaleString(I18N.locale, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })} 解除</div></div>
       <button class="btn sm" data-unban="${esc(b.ip)}">解除</button></div>`).join("")
     : `<div class="small muted">沒有。同一個位址一小時內猜錯成員網址 ${d.rules.bad_token} 次、猜錯分享密碼 ${d.rules.share_pw} 次，就會自動封鎖 ${d.ban_hours} 小時，並推播通知你。</div>`;
   $("#secEvents").innerHTML = d.recent.length ? d.recent.slice(0, 30).map(e => { const k = d.kinds[e.kind] || { label: e.kind, level: "warn" };
@@ -2268,7 +2291,7 @@ function renderNotifySettings() {
   if (!supported && !standalone) state = `<div class="banner">${icon("alert")} iPhone 要先把控制台<b>加入主畫面</b>，再從主畫面的圖示打開，才能開啟推播（iOS 16.4 以上）。</div>`;
   else if (!supported) state = `<div class="banner bad">${icon("alert")} 這個瀏覽器不支援推播</div>`;
   else if (perm === "denied") state = `<div class="banner bad">${icon("alert")} 推播被關掉了，請到 iPhone「設定 → 通知 → 控制台」打開</div>`;
-  $("#pushInfo").innerHTML = state + kv([["收通知的裝置", NOTIFY.subs.length ? NOTIFY.subs.length + " 台" : '<span class="pill">還沒有</span>']]) +
+  $("#pushInfo").innerHTML = state + kv([["收通知的裝置", NOTIFY.subs.length ? `${NOTIFY.subs.length} 台` : '<span class="pill">還沒有</span>']]) +
     NOTIFY.subs.map(s => `<div class="row"><div class="grow"><div class="t">${esc(s.device)}</div><div class="s">${ago(s.added)} 開啟</div></div>
       <button class="btn sm danger" data-unsub="${esc(s.endpoint)}">移除</button></div>`).join("") +
     `<div class="btns" style="margin-top:12px">${supported && perm !== "denied" ? `<button class="btn primary" id="pushOn">${icon("bell")}在這支手機開啟推播</button>` : ""}
@@ -2386,7 +2409,7 @@ function renderMemberBug() {
   const dev = b.device ? `<details style="margin-top:8px"><summary>裝置資訊</summary><div class="small muted" style="overflow-wrap:anywhere">${esc(b.device.ua)}<br>螢幕 ${esc(b.device.screen)}・語言 ${esc(b.device.lang)}<br>頁面 ${esc(b.device.page)}</div></details>` : "";
   $("#bugBody").innerHTML = `<div class="bug-sheet">
     <div class="sect"><div style="font-size:18px;font-weight:800;overflow-wrap:anywhere">${esc(b.title)}</div>
-      <div class="small muted" style="margin:4px 0 10px">${new Date(b.at * 1000).toLocaleString("zh-TW", { hour12: false })}・${esc(d.areas[b.area])}・${esc(d.severities[b.severity])}</div>
+      <div class="small muted" style="margin:4px 0 10px">${new Date(b.at * 1000).toLocaleString(I18N.locale, { hour12: false })}・${esc(d.areas[b.area])}・${esc(d.severities[b.severity])}</div>
       ${b.desc ? `<div class="bug-desc">${esc(b.desc)}</div>` : `<div class="small muted">（沒有寫說明）</div>`}
       ${b.shots.length ? `<div class="bug-shots" style="margin-top:10px">${b.shots.map(n => `<img src="/api/bugshot?id=${b.id}&n=${n}" alt="截圖 ${n + 1}" data-zoom>`).join("")}</div>` : ""}${dev}</div>
     <div class="sect"><div class="st">狀態</div><div class="chipbtns">${Object.entries(d.statuses).map(([k, l]) => chip(b.status === k, `data-bst="${k}"`, l)).join("")}</div>
@@ -2403,7 +2426,7 @@ function renderSecBug() {
   $("#bugBody").innerHTML = `<div class="bug-sheet">
     <div class="banner bad" style="margin:4px 0 12px">${icon("lock")} 這是私下回報：只有你和回報的人看得到。修好之前請不要公開討論細節。</div>
     <div class="sect"><div style="font-size:18px;font-weight:800;overflow-wrap:anywhere">${esc(a.title)}</div>
-      <div class="small muted" style="margin:4px 0 10px">${esc(a.reporter)}・${new Date(a.created).toLocaleString("zh-TW", { hour12: false })}・${esc(sec.states[a.state] || a.state)}${a.severity ? "・嚴重度 " + esc(SEV_ZH[a.severity] || a.severity) : ""}</div>
+      <div class="small muted" style="margin:4px 0 10px">${esc(a.reporter)}・${new Date(a.created).toLocaleString(I18N.locale, { hour12: false })}・${esc(sec.states[a.state] || a.state)}${a.severity ? "・嚴重度 " + esc(SEV_ZH[a.severity] || a.severity) : ""}</div>
       <div class="bug-desc">${esc(a.body) || "（沒有內容）"}</div></div>
     <div class="sect"><div class="st">處理狀態</div><div class="btns">
       ${a.state === "triage" ? `<button class="btn sm primary" data-adv="draft">${icon("tick")}確認收到，開始處理</button>` : ""}
@@ -2426,7 +2449,7 @@ async function renderGhBug() {
   const L = ["bug", "enhancement", "question", "需要更多資訊", "duplicate", "help wanted"];
   $("#bugBody").innerHTML = `<div class="bug-sheet">
     <div class="sect"><div style="font-size:18px;font-weight:800;overflow-wrap:anywhere">${esc(i.title)}</div>
-      <div class="small muted" style="margin:4px 0 10px">${esc(i.author)}・${new Date(i.created).toLocaleString("zh-TW", { hour12: false })}・${i.state === "OPEN" ? "待處理" : "已關閉"}</div>
+      <div class="small muted" style="margin:4px 0 10px">${esc(i.author)}・${new Date(i.created).toLocaleString(I18N.locale, { hour12: false })}・${i.state === "OPEN" ? "待處理" : "已關閉"}</div>
       <div class="bug-desc">${esc(i.body) || "（沒有內容）"}</div>
       <div class="btns" style="margin-top:8px"><a class="btn sm" href="${esc(i.url)}" target="_blank" rel="noopener">${ghIcon()}在 GitHub 打開</a></div></div>
     <div class="sect"><div class="st">狀態</div><div class="btns">${i.state === "OPEN"
@@ -2461,6 +2484,8 @@ document.addEventListener("click", async e => {
 // ---------- report to the system author (prefilled GitHub issue; no GitHub knowledge needed) ----------
 var UP = null;
 const UP_AREAS = ["安裝（install.sh）", "控制台", "成員專屬網頁", "雲端硬碟", "擋廣告（AdGuard）", "Tailscale／連線", "Shadowrocket", "安全監測", "其他"];
+const UP_AREA_EN = { "安裝（install.sh）": "Install", "控制台": "Control panel", "成員專屬網頁": "Member page", "雲端硬碟": "Cloud drive", "擋廣告（AdGuard）": "Ad blocking",
+  "Tailscale／連線": "Connection", "Shadowrocket": "", "安全監測": "Security monitor", "其他": "Other" };
 async function openUpstream() {
   UP = { kind: "bug", area: "控制台", diag: null };
   $("#upSheet").hidden = false; renderUpstream();
@@ -2505,7 +2530,7 @@ function upLink() {
   if (UP.kind === "bug") {
     const ver = (env.match(/版本：(.*)/) || [])[1] || "", mac = [(env.match(/macOS：(.*)/) || [])[1], (env.match(/Mac：(.*)/) || [])[1]].filter(Boolean).join("，");
     q.set("template", "bug_report.yml"); q.set("title", "[問題] " + v("upTitle"));
-    q.set("area", UP.area); q.set("what", `【${UP.area}】${v("upWhat") ? "\n" + v("upWhat") : ""}`); q.set("steps", v("upSteps"));
+    q.set("area", UP_AREA_EN[UP.area] ? UP.area + " / " + UP_AREA_EN[UP.area] : UP.area);  // must equal an option in .github/ISSUE_TEMPLATE/bug_report.yml q.set("what", `【${UP.area}】${v("upWhat") ? "\n" + v("upWhat") : ""}`); q.set("steps", v("upSteps"));
     q.set("macos", mac); q.set("client", v("upClient")); q.set("version", ver);
     q.set("logs", (env + "\n\n" + v("upErr")).slice(0, 3500));
   } else { q.set("template", "feature_request.yml"); q.set("title", "[建議] " + v("upTitle")); q.set("want", v("upTitle")); q.set("why", v("upWhat")); }
@@ -2529,6 +2554,7 @@ async function loadWin() {
   if (S.me.role !== "owner") { $("#rmSeg").hidden = true; return; }
   try { WIN.pcs = (await api("/api/win")).pcs; } catch { return; }
   if (WIN.cur !== "mac" && WIN.cur !== "add" && !WIN.pcs.some(p => p.id === WIN.cur)) WIN.cur = "mac";
+  if ($('section[data-tab="remote"]').classList.contains("show")) $("#pageSub").textContent = pageSub("remote");
   if (WIN.pair && WIN.pcs.length > WIN.pair.count) {  // the PC just finished pairing
     const pc = WIN.pcs[WIN.pcs.length - 1]; WIN.pair = null; WIN.cur = pc.id; toast(`已連上 ${pc.name}`, "ok");
   }
@@ -2537,8 +2563,13 @@ async function loadWin() {
 function renderRemote() {
   const seg = $("#rmSeg"); seg.hidden = false;
   const btn = (k, html) => `<button data-rm="${esc(k)}" class="${WIN.cur === k ? "on" : ""}">${html}</button>`;
-  const html = btn("mac", "Mac") + WIN.pcs.map(p => btn(p.id, `<span class="dot ${p.online ? "on" : ""}"></span>${esc(p.name)}`)).join("") + btn("add", WIN.pcs.length ? "＋" : "＋ Windows");
+  const html = btn("mac", "Mac") + WIN.pcs.map(p => btn(p.id, `<span class="dot ${p.online ? "live" : ""}"></span>${esc(p.name)}`)).join("") + btn("add", WIN.pcs.length ? "＋" : "＋ Windows");
   if (seg.innerHTML !== html) seg.innerHTML = html;
+  if (WIN.shown !== WIN.cur) {  // keep the selected PC in view when the bar scrolls
+    WIN.shown = WIN.cur;
+    const on = seg.querySelector("button.on");
+    if (on) seg.scrollLeft = Math.max(0, on.offsetLeft - seg.offsetLeft - (seg.clientWidth - on.offsetWidth) / 2);
+  }
   $("#rm-mac").hidden = WIN.cur !== "mac"; $("#rm-win").hidden = WIN.cur === "mac";
   if (WIN.cur === "add") renderWinAdd(); else if (WIN.cur !== "mac") renderWinPc(WIN.pcs.find(p => p.id === WIN.cur));
 }
@@ -2602,8 +2633,8 @@ function renderWinPc(pc) {
   $("#wNp").innerHTML = m && m.track ? `<div class="art">${icon(m.state === "playing" ? "music" : "pause")}</div><div class="grow" style="min-width:0"><div class="t">${esc(m.track)}</div><div class="s">${esc(m.artist || "")}${m.artist ? "・" : ""}${esc(m.app || "")}</div></div>`
     : `<div class="art">${icon("music")}</div><div class="muted">${pc.online ? "沒有在播放" : "電腦離線"}</div>`;
   if (st.volume != null && document.activeElement !== $("#wVol") && Date.now() - (WIN.volAt || 0) > 3000) { $("#wVol").value = st.volume; $("#wVolVal").textContent = st.muted ? "（靜音）" : st.volume; }
-  $("#wMeta").textContent = `${st.os || "Windows"}・${pc.login}・${new Date(pc.created * 1000).toLocaleDateString("zh-TW")} 加入`;
-  $$("#rm-win [data-wc], #rm-win [data-wmedia]").forEach(b => b.disabled = !pc.online);
+  $("#wMeta").textContent = `${st.os || "Windows"}・${pc.login}・${new Date(pc.created * 1000).toLocaleDateString(I18N.locale)} 加入`;
+  $$("#rm-win [data-wc], #rm-win [data-wmedia], #wVol").forEach(b => b.disabled = !pc.online);
 }
 async function winCmd(cmd, arg, okMsg) {
   return act("win_cmd", { id: WIN.cur, cmd, arg: arg || {} }, okMsg);
@@ -2619,7 +2650,7 @@ document.addEventListener("click", async e => {
   if (seg) { WIN.cur = seg.dataset.rm; renderRemote(); if (WIN.cur !== "mac") loadWin(); return; }
   const t = e.target.closest("#rm-win button"); if (!t) return;
   if (t.id === "wPair") {
-    try { const d = await act("win_pair"); WIN.pair = { code: d.code, expires: d.expires, count: (WIN.pcs || []).length }; renderWinAdd(); } catch { return; }
+    try { const d = await act("win_pair", { lang: I18N.lang }); WIN.pair = { code: d.code, expires: d.expires, count: (WIN.pcs || []).length }; renderWinAdd(); } catch { return; }
     clearInterval(WIN.pairT);  // watch closely for the PC to finish installing
     WIN.pairT = setInterval(() => { if (!WIN.pair || Date.now() > WIN.pair.expires * 1000) { clearInterval(WIN.pairT); return; } if (!document.hidden) loadWin(); }, 2000);
     return;
@@ -2660,7 +2691,7 @@ async function loadShares() {
   try {
     const d = await api("/api/shares");
     $("#shareList").innerHTML = d.items.length ? d.items.map(s => `<div class="row" style="flex-wrap:wrap">${badge(s.dir ? "folder" : "file", s.expired ? "gray" : "indigo", "devbadge")}
-      <div class="grow"><div class="t">${esc(s.name)}</div><div class="s" style="white-space:normal">${esc(s.creator.split("@")[0])} 建立・${s.expires ? new Date(s.expires * 1000).toLocaleDateString("zh-TW") + " 到期" : "永久"}・已下載 ${s.downloads}${s.max ? "/" + s.max : ""} 次${s.password ? "・有密碼" : ""}
+      <div class="grow"><div class="t">${esc(s.name)}</div><div class="s" style="white-space:normal">${esc(s.creator.split("@")[0])} 建立・${s.expires ? new Date(s.expires * 1000).toLocaleDateString(I18N.locale) + " 到期" : "永久"}・已下載 ${s.downloads}${s.max ? "/" + s.max : ""} 次${s.password ? "・有密碼" : ""}
         ${s.expired ? `・<span style="color:var(--bad)">${esc(s.expired)}</span>` : ""}</div></div>
       <button class="btn sm iconbtn" data-scopy="${esc(s.url)}" aria-label="複製連結">${icon("clipboard")}</button>
       <button class="btn sm iconbtn danger" data-srevoke="${esc(s.id)}" aria-label="取消分享">${icon("x")}</button></div>`).join("")
@@ -2825,7 +2856,7 @@ async function loadLog() {
     const d = await api("/api/querylog?" + q);
     $("#logList").innerHTML = d.rows.map(r => { const [lab, cls] = REASON[r.reason] || ["", ""];
       return `<div class="row" data-d="${esc(r.domain)}"><div class="grow"><div class="dom">${esc(r.domain)} <span class="muted small">${esc(r.type)}</span></div>
-        <div class="s">${new Date(r.time).toLocaleTimeString("zh-TW")}・${clientName(r.client)}・${(+r.ms).toFixed(0)} ms</div></div>
+        <div class="s">${new Date(r.time).toLocaleTimeString(I18N.locale)}・${clientName(r.client)}・${(+r.ms).toFixed(0)} ms</div></div>
         ${lab ? `<span class="pill ${cls}">${lab}</span>` : ""}
         ${cls === "bad" ? `<button class="btn sm" data-rule="allow">放行</button>` : `<button class="btn sm danger" data-rule="block">擋</button>`}</div>`; }).join("") || `<div class="empty">沒有紀錄</div>`;
   } catch (e) { $("#logList").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }

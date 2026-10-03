@@ -2,6 +2,9 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<!--I18N-->
+<script>/* if the language script didn't load, keep working in Chinese */
+if (!window.I18N) window.I18N = { lang: "zh-TW", locale: "zh-TW", t: (s, v) => v ? String(s).replace(/\{(\d+)\}/g, (x, n) => v[n - 1] ?? x) : s, weekdays: () => [..."一二三四五六日"], set() {} };</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -80,6 +83,7 @@ html.big .hero .chips { flex-wrap: wrap; overflow: visible; }
 <header>
   <span class="dot" id="liveDot"></span>
   <div class="titles"><h1>我的連線</h1><div class="subtitle" id="pageSub"></div></div>
+  <label class="theme-btn langbtn" translate="no" title="Language / 語言"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg><select data-langpick aria-label="Language / 語言"></select></label>
   <button class="theme-btn" id="bigBtn" title="大字模式" aria-label="大字模式"></button>
   <button class="theme-btn" id="themeBtn" title="切換深色 / 淺色" aria-label="切換深色 / 淺色"></button>
 </header>
@@ -178,14 +182,16 @@ function dayText(ds, W) {
   if (k === "0,1,2,3,4") return "平日（週一至週五）";
   if (k === "5,6") return "週末";
   const run = ds.length > 2 && ds.every((v, i, a) => i === 0 || v === a[i - 1] + 1);
+  if (!/^zh/.test(I18N.lang)) { W = I18N.weekdays(); return run ? `${W[ds[0]]}–${W[ds[ds.length - 1]]}` : ds.map(x => W[x]).join(", "); }
   return run ? `週${W[ds[0]]}至週${W[ds[ds.length - 1]]}` : "週" + ds.map(x => W[x]).join("、");
 }
 const mini = rows => `<div class="mini-grid">${rows.map(([k, v]) => `<div class="mini"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>`;
+const ringSize = v => { const len = String(I18N.t(String(v))).replace(/<[^>]*>/g, "").length; return len > 8 ? "xs" : len > 4 ? "small" : ""; };
 function ringTile(label, ic, c, value, sub, pct) {
   const p = pct == null ? null : Math.max(0, Math.min(100, pct)), R = 40, L = 2 * Math.PI * R;
   return `<div class="card tile ring" style="--c:${C[c]}">
     <div class="ringbox"><svg viewBox="0 0 96 96"><circle class="trk" cx="48" cy="48" r="${R}"/>${p != null && p >= 0.5 ? `<circle class="val" cx="48" cy="48" r="${R}" stroke-dasharray="${(p / 100 * L).toFixed(1)} ${L.toFixed(1)}"/>` : ""}</svg>
-      <div class="rv ${String(value).length > 4 ? "small" : ""}">${value}</div></div>
+      <div class="rv ${ringSize(value)}">${value}</div></div>
     <div class="rl">${badge(ic, c)}${label}</div><div class="sub">${sub}</div></div>`;
 }
 function toast(msg, ic) { const t = $("#toast"); t.innerHTML = (ic ? icon(ic) + " " : "") + esc(msg); t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2200); }
@@ -267,7 +273,7 @@ function render() {
       <div><div class="hi">${hi}，</div><div class="name">${esc(shown)}</div></div></div>
     <div class="chips">${chips.map(([i, c, t]) => `<span class="stat-chip" style="--c:${C[c]}">${icon(i)}${t}</span>`).join("")}</div></div>`);
   const now = new Date();
-  $("#pageSub").textContent = `${now.getMonth() + 1}月${now.getDate()}日・${d.active ? "可以使用" : d.status}`;
+  $("#pageSub").textContent = `${now.toLocaleDateString(I18N.locale, { month: "short", day: "numeric" })}・${d.active ? "可以使用" : d.status}`;
 
   if (!d.active) out.push(`<div class="banner bad">${icon("alert")} 你的使用權限目前無效（${esc(d.status)}）。如果有疑問，請聯絡管理員。</div>`);
 
@@ -283,7 +289,7 @@ function render() {
   } else tiles.push(ringTile("使用期限", "calendar", "green", "永久", "沒有到期日", 100));
   if (d.daily_min) {
     const used = d.minutes_today || 0, left = Math.max(0, d.daily_min - used);
-    tiles.push(ringTile("今天還能用", "clock", left <= 10 ? "red" : left <= 30 ? "orange" : "blue", left >= 60 ? Math.floor(left / 60) + "時" + (left % 60 ? left % 60 + "分" : "") : left + " 分",
+    tiles.push(ringTile("今天還能用", "clock", left <= 10 ? "red" : left <= 30 ? "orange" : "blue", left >= 60 ? (left % 60 ? I18N.t("{1}時{2}分", [Math.floor(left / 60), left % 60]) : I18N.t("{1}時", [Math.floor(left / 60)])) : I18N.t("{1} 分", [left]),
       `每天 ${d.daily_min >= 60 ? +(d.daily_min / 60).toFixed(1) + " 小時" : d.daily_min + " 分鐘"}・已用 ${used} 分`, left / d.daily_min * 100));
   }
   out.push(`<div class="grid tiles4">${tiles.join("")}</div>`);
@@ -473,9 +479,9 @@ function renderMyBugs() {
   const el = $("#myBugs"); if (!el || !BUGS) return;
   el.innerHTML = BUGS.items.length ? `<div class="small muted" style="margin:10px 0 2px">我的回報</div>` + BUGS.items.slice(0, 8).map(b => `<div class="mybug">
     <div style="display:flex;gap:8px;align-items:flex-start"><div style="flex:1;min-width:0"><div class="t">${esc(b.title)}${b.unread ? '<span class="newdot" title="管理員回覆了"></span>' : ""}</div>
-      <div class="s">${new Date(b.at * 1000).toLocaleDateString("zh-TW")}・${esc(BUGS.areas[b.area])}${b.shots ? `・${b.shots} 張截圖` : ""}</div></div>
+      <div class="s">${new Date(b.at * 1000).toLocaleDateString(I18N.locale)}・${esc(BUGS.areas[b.area])}${b.shots ? `・${b.shots} 張截圖` : ""}</div></div>
       <span class="bst ${b.status}">${esc(BUGS.statuses[b.status])}</span></div>
-    ${b.thread.map(m => `<div class="bmsg ${m.from === "owner" ? "owner" : "mine"}"><div class="bw">${m.from === "owner" ? "管理員" : "我"}・${new Date(m.t * 1000).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>${esc(m.text)}</div>`).join("")}
+    ${b.thread.map(m => `<div class="bmsg ${m.from === "owner" ? "owner" : "mine"}"><div class="bw">${m.from === "owner" ? "管理員" : "我"}・${new Date(m.t * 1000).toLocaleString(I18N.locale, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>${esc(m.text)}</div>`).join("")}
     ${["fixed", "wontfix", "dup"].includes(b.status) ? `<details><summary>還是有問題？</summary><div class="inline" style="margin-top:6px"><input type="text" data-bugreply="${b.id}" placeholder="補充說明" style="font-size:16px"><button class="btn sm" data-bugsend="${b.id}">送出</button></div></details>`
       : `<div class="inline" style="margin-top:6px"><input type="text" data-bugreply="${b.id}" placeholder="補充說明（可以不填）" style="font-size:16px"><button class="btn sm" data-bugsend="${b.id}">送出</button></div>`}</div>`).join("") : "";
 }
@@ -533,7 +539,7 @@ function renderMsgs() {
   const el = $("#myMsgs"); if (!el || !MYMSG) return;
   el.innerHTML = MYMSG.length ? `<div class="small muted" style="margin:14px 0 2px">之前的留言</div>` + MYMSG.slice(0, 5).map(m => `<div class="row" style="align-items:flex-start">
       ${badge(m.done ? "tick" : "clock", m.done ? "green" : "orange")}<div class="grow"><div class="t">${esc(MSGT[m.kind] || m.kind)}</div>
-      <div class="s">${new Date(m.at * 1000).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}・${m.done ? "已處理" : "等待回覆"}</div>
+      <div class="s">${new Date(m.at * 1000).toLocaleString(I18N.locale, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}・${m.done ? "已處理" : "等待回覆"}</div>
       ${m.text ? `<div class="msg-text">${esc(m.text)}</div>` : ""}${m.reply ? `<div class="msg-text" style="color:var(--accent)">${icon("reply")} 管理員：${esc(m.reply)}</div>` : ""}</div></div>`).join("") : "";
 }
 async function sendMsg() {

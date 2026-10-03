@@ -1,9 +1,12 @@
 # Mac 家用伺服器
 
+**繁體中文** · [English](README.en.md)
+
 把一台 Mac 變成全家人的網路中心：用 **Tailscale** 連回家、**擋廣告**、**家用雲端硬碟**，
 再加一個手機用的**控制台**，用按鈕就能管理每個人能用什麼、能用多久——不用寫程式、不用改路由器。
 
-> 介面是繁體中文，為 iPhone 設計（也支援電腦、深色模式）。
+> 介面支援 **繁體中文、English、简体中文、日本語、한국어、Español**，自動跟著手機語言，也可以按 🌐 自己選。
+> 為 iPhone 設計（也支援電腦、深色模式）。
 > 給家人看的使用教學：<https://hitachi513.github.io/home-guide/>
 
 ## 功能
@@ -20,6 +23,7 @@
 | 🔑 **成員網頁密碼** | 秘密網址之外再加一道密碼；記住裝置 30 天、重設密碼會登出所有裝置、猜錯會鎖定 |
 | 😀 **個人設定** | 成員點頭像可以換照片／表情符號、取暱稱、開大字、改密碼 |
 | 🐞 **問題回報** | 家人在專屬網頁回報（可附截圖），GitHub issues 也一起列在控制台，可以改狀態、回覆、標籤 |
+| 🌐 **6 種語言** | 所有畫面、推播通知、安裝程式、Windows 遙控程式都會跟著使用者的語言 |
 | 🚀 **Shadowrocket**（選用，預設關閉） | 讓不裝 Tailscale 的人用 Shadowrocket 連回家 ⚠️ 見下方「法律注意」 |
 
 ## 需要準備
@@ -67,6 +71,7 @@ iPhone ──Tailscale──▶ tailscale serve :443  ──▶ 控制台   127.
 
 - 只用 Python 標準函式庫寫的伺服器（另外只需要 `cryptography` 和 `cbor2`），沒有資料庫，資料都是 JSON 檔（權限 600）
 - 成員權限會即時轉成 Tailscale ACL（透過 Tailscale API），到期、時段、時數用完都會自動收回
+- 多語言：介面用繁體中文寫，`dashboard/i18n/strings.json` 對照每一句的其他語言翻譯；`python3 tools/i18n_extract.py --check` 會列出還沒翻譯的句子
 
 ## 安全
 
@@ -86,7 +91,7 @@ iPhone ──Tailscale──▶ tailscale serve :443  ──▶ 控制台   127.
 | 🙋 不熟 GitHub | 在你自己的**控制台 → 成員 → 回報 → 回報給系統作者**，填中文表單，系統會自動整理好並遮掉個人資料，按一下就打開填好的 GitHub 頁面 |
 | 👨‍👩‍👧 你是某個家庭的成員（別人幫你架的） | 在你的**專屬網頁**按「回報問題」，會直接送給幫你架設的人 |
 
-需要 GitHub 帳號（免費）。表單是中文的，照著填就好。詳細說明請看 [CONTRIBUTING.md](CONTRIBUTING.md)。
+需要 GitHub 帳號（免費）。表單是中英雙語的，照著填就好。詳細說明請看 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 **回報前請先：**
 1. 到 [Issues](https://github.com/Hitachi513/mac-homeserver/issues?q=is%3Aissue) 搜尋看看，是不是有人回報過了（有的話在下面留言 +1 並補充你的情況）
@@ -113,21 +118,3 @@ Shadowrocket 功能本質上是代理伺服器。**在部分國家或地區，�
 [MIT](LICENSE)（第三方元件見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)）。AdGuard Home（GPL-3.0）、Xray-core（MPL-2.0）、noVNC（MPL-2.0）、websockify（LGPL-3.0）
 不包含在這個專案裡，由安裝程式從官方來源下載，各自依原本的授權使用。
 
----
-
-<details><summary>English</summary>
-
-**Mac Home Server** turns an always-on Mac into a family network hub: Tailscale VPN (with exit node),
-AdGuard Home ad-blocking with per-person filters, an external-disk family cloud (quotas, shared folder, trash,
-share links, previews, iPhone photo backup), per-member permissions/schedules/time quotas pushed to the Tailscale
-ACL, and a mobile-first control panel (PIN + Face ID lock, Web Push, Mac health, security score and a built-in
-self-attack test). An optional, off-by-default Shadowrocket (Xray) gateway is included — check your local laws first.
-
-```bash
-git clone https://github.com/Hitachi513/mac-homeserver ~/homeserver
-bash ~/homeserver/install.sh
-```
-
-The UI is in Traditional Chinese. MIT licensed; third-party components are downloaded by the installer and keep
-their own licenses. See [SECURITY.md](SECURITY.md) for the threat model.
-</details>

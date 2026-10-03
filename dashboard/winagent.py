@@ -9,9 +9,12 @@ in COMMANDS, never anything sent as code.
 import hashlib
 import json
 import os
+import re
 import secrets
 import threading
 import time
+
+import i18n
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FILE = os.path.join(HERE, "winagents.json")
@@ -63,20 +66,25 @@ _db = _load()
 _live = {}  # agent id -> {"seen": t, "stats": {...}, "ver": str} (kept in memory; stats change every few seconds)
 
 
-def new_code():
+def new_code(lang="zh-TW"):
+    """A one-time pairing code; the PC's messages will be in `lang` (the language of whoever made the code)."""
     with _cv:
         now = time.time()
-        for c in [c for c, exp in _codes.items() if exp < now]:
+        for c in [c for c, (exp, _) in _codes.items() if exp < now]:
             del _codes[c]
         code = "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(8))
-        _codes[code] = now + CODE_TTL
-        return {"code": code, "expires": _codes[code]}
+        _codes[code] = (now + CODE_TTL, lang)
+        return {"code": code, "expires": _codes[code][0]}
+
+
+def code_lang(code):
+    return (_codes.get(str(code or "").upper()) or (0, "zh-TW"))[1]
 
 
 def code_ok(code):
     """True when `code` is a live pairing code. Repeated wrong codes wipe all codes (someone guessing)."""
     with _cv:
-        if _codes.get(str(code or "").upper(), 0) > time.time():
+        if (_codes.get(str(code or "").upper()) or (0,))[0] > time.time():
             return True
         now = time.time()
         if now - _fails["t"] > 3600:
@@ -92,13 +100,13 @@ def pair(code, name, login):
     """Use up a pairing code; returns (agent id, token)."""
     with _cv:
         code = str(code or "").upper()
-        if _codes.get(code, 0) <= time.time():
-            raise PermissionError("配對碼錯誤或已過期，請在控制台重新產生")
-        del _codes[code]
+        if (_codes.get(code) or (0,))[0] <= time.time():
+            raise PermissionError("Wrong or expired pairing code / 配對碼錯誤或已過期，請在控制台重新產生")
+        lang = _codes.pop(code)[1]
         aid = secrets.token_hex(6)
         token = secrets.token_urlsafe(32)
         _db["agents"][aid] = {"name": (str(name or "").strip() or "Windows 電腦")[:40], "login": login,
-                              "hash": _h(token), "created": time.time()}
+                              "hash": _h(token), "created": time.time(), "lang": lang}
         _save(_db)
         return aid, token
 
@@ -200,6 +208,10 @@ def remove(aid):
         return a["name"]
 
 
+def lang_of(aid):
+    return (_db["agents"].get(aid) or {}).get("lang", "zh-TW")
+
+
 def name_of(aid):
     return (_db["agents"].get(aid) or {}).get("name", aid)
 
@@ -208,8 +220,13 @@ def script(kind, **values):
     """install.ps1 / agent.ps1 with placeholders filled. agent.ps1 is saved to disk, so it gets a UTF-8 BOM:
     Windows PowerShell 5.1 reads a .ps1 without one in the local code page, which garbles the Chinese text.
     install.ps1 is piped into `iex` as a string (decoded by the charset header), where a BOM would break it."""
+    lang = values.pop("lang", "zh-TW")
     with open(os.path.join(SCRIPT_DIR, kind + ".ps1"), encoding="utf-8") as f:
         text = f.read().replace("__VER__", AGENT_VER)
     for k, v in values.items():
         text = text.replace(f"__{k.upper()}__", v)
+    if lang != "zh-TW":  # translate the Chinese string literals (messages, the notice title, the shutdown reason)
+        text = re.sub(r"'((?:[^'\n]|'')*[\u3400-\u9fff](?:[^'\n]|'')*)'",
+                      lambda m: "'" + i18n.t(m.group(1).replace("''", "'"), lang).replace("'", "''") + "'", text)
+        text = re.sub(r'"((?:[^"\n`]|`.)*[\u3400-\u9fff](?:[^"\n`]|`.)*)"', lambda m: '"' + i18n.t(m.group(1), lang).replace('"', '`"') + '"', text)
     return ("\ufeff" if kind == "agent" else "") + text
