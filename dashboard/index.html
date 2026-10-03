@@ -374,6 +374,19 @@ nav button.active .i .ico { stroke-width: 2.3; }
   padding: 8px 6px; border-radius: 10px; cursor: pointer; transition: background .2s, color .2s; }
 .seg button.on { background: var(--glass-strong); color: var(--text); box-shadow: 0 1px 6px rgba(0,0,0,.12), var(--inner); }
 .quick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.win-head { display: flex; align-items: center; gap: 12px; }
+.win-head .t { font-size: 17px; font-weight: 750; overflow-wrap: anywhere; }
+.win-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.win-stats > div { background: var(--fill); border-radius: 12px; padding: 8px 10px; min-width: 0; }
+.win-stats .k { font-size: 12px; color: var(--text-2); }
+.win-stats .v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.win-stats .bar { height: 4px; border-radius: 2px; background: var(--fill); margin-top: 5px; overflow: hidden; }
+.win-stats .bar i { display: block; height: 100%; background: var(--accent, #0a84ff); border-radius: 2px; }
+.win-cmd { font: 13px/1.5 ui-monospace, Menlo, monospace; background: var(--fill); border-radius: 12px; padding: 10px 12px; overflow-wrap: anywhere; user-select: all; -webkit-user-select: all; }
+.win-steps { margin: 0; padding-left: 20px; line-height: 1.75; }
+#rmSeg button .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; background: var(--text-3, #8e8e93); }
+#rmSeg button .dot.on { background: var(--good, #30d158); }
+#rmSeg button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .qbtn { position: relative; font: inherit; text-align: left; text-decoration: none; color: var(--text); cursor: pointer;
   display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 20px;
   background-color: var(--glass); background-image: var(--sheen); border: 1px solid var(--glass-border);
@@ -840,7 +853,9 @@ html.no-sr .feat-sr { display: none !important; }
 
 <!-- 遙控 -->
 <section data-tab="remote">
-  <div class="stack">
+  <div class="seg" id="rmSeg" hidden></div>
+  <div class="stack" id="rm-win" hidden></div>
+  <div class="stack" id="rm-mac">
     <div class="card">
       <h2>音樂</h2>
       <div class="np" id="np"></div>
@@ -859,7 +874,7 @@ html.no-sr .feat-sr { display: none !important; }
         <button class="qbtn" id="sleepBtn"><i data-ic="moon"></i><span>關螢幕</span></button>
         <label class="qbtn switchbtn"><i data-ic="coffee"></i><span>防止睡眠</span><span class="switch"><input type="checkbox" id="awakeSwitch"><span></span></span></label>
       </div>
-      <div class="small muted" style="margin-top:10px">遠端操控：按「連線」後輸入 Mac 的使用者名稱 <code>hitachi</code> 和開機密碼。</div>
+      <div class="small muted" style="margin-top:10px">遠端操控：按「連線」後輸入 Mac 的使用者名稱 <code id="vncUser">（你的 Mac 帳號）</code> 和開機密碼。</div>
       <img class="shot" id="shot" hidden alt="Mac 螢幕截圖">
     </div>
     <div class="card">
@@ -1277,7 +1292,7 @@ function show(tab) {
   try { localStorage.setItem("tab", tab); } catch {}
   if (location.hash.slice(1) !== tab) history.replaceState(null, "", "#" + tab);
   if (tab === "cloud") { initDrive(); loadShares(); loadBackup(); }
-  if (tab === "remote") setTimeout(loadMedia, 0);
+  if (tab === "remote") setTimeout(() => { loadMedia(); loadWin(); }, 0);
   if (tab === "members") { loadMembers(); loadProxy(); loadMsgs(); loadBugs(); }
   if (tab === "settings") { loadNotify(); api("/api/arrival").then(d => { ARR = d.prefs || {}; refresh(true); }).catch(() => {}); }
   onPane(tab);
@@ -1603,6 +1618,7 @@ function render(d) {
 
   // remote (music / volume come from /api/media, loaded only while the 遙控 tab is open)
   $("#awakeSwitch").checked = !!sys.keep_awake;
+  if (sys.user) $("#vncUser").textContent = sys.user;
   $('[data-quick="awake"]').innerHTML = icon("coffee") + `<span>${sys.keep_awake ? "防止睡眠中" : "防止睡眠"}</span>`;
   $('[data-quick="awake"]').classList.toggle("on", !!sys.keep_awake);
 
@@ -1693,7 +1709,7 @@ setInterval(() => {
   const every = document.hasFocus() ? 5000 : 30000;
   if (Date.now() - lastPoll < every - 200) return;
   lastPoll = Date.now(); refresh();
-  if ($('section[data-tab="remote"]').classList.contains("show")) loadMedia();
+  if ($('section[data-tab="remote"]').classList.contains("show")) { loadMedia(); loadWin(); }
 }, 1000);
 async function loadMedia() { try { renderMedia(await api("/api/media")); } catch {} }
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
@@ -2504,6 +2520,139 @@ document.addEventListener("click", async e => {
   const go = t.closest("#upGo"); if (go && !$("#upTitle").value.trim()) { e.preventDefault(); toast("請先用一句話寫下發生什麼事", "alert"); $("#upTitle").focus(); return; }
   if (go) { toast("已打開 GitHub，登入後按「Create」就送出了", "ok"); return; }
   if (t.closest("#upCopy")) { try { await navigator.clipboard.writeText(upText()); toast("已複製", "ok"); } catch { toast("無法複製", "alert"); } }
+});
+
+// ---------- Windows PCs (remote agent; owner only) ----------
+var WIN = { pcs: null, cur: "mac", pair: null, drafts: {} };
+async function loadWin() {
+  if (!S || !S.me) { setTimeout(loadWin, 500); return; }  // overview not loaded yet
+  if (S.me.role !== "owner") { $("#rmSeg").hidden = true; return; }
+  try { WIN.pcs = (await api("/api/win")).pcs; } catch { return; }
+  if (WIN.cur !== "mac" && WIN.cur !== "add" && !WIN.pcs.some(p => p.id === WIN.cur)) WIN.cur = "mac";
+  if (WIN.pair && WIN.pcs.length > WIN.pair.count) {  // the PC just finished pairing
+    const pc = WIN.pcs[WIN.pcs.length - 1]; WIN.pair = null; WIN.cur = pc.id; toast(`已連上 ${pc.name}`, "ok");
+  }
+  renderRemote();
+}
+function renderRemote() {
+  const seg = $("#rmSeg"); seg.hidden = false;
+  const btn = (k, html) => `<button data-rm="${esc(k)}" class="${WIN.cur === k ? "on" : ""}">${html}</button>`;
+  const html = btn("mac", "Mac") + WIN.pcs.map(p => btn(p.id, `<span class="dot ${p.online ? "on" : ""}"></span>${esc(p.name)}`)).join("") + btn("add", WIN.pcs.length ? "＋" : "＋ Windows");
+  if (seg.innerHTML !== html) seg.innerHTML = html;
+  $("#rm-mac").hidden = WIN.cur !== "mac"; $("#rm-win").hidden = WIN.cur === "mac";
+  if (WIN.cur === "add") renderWinAdd(); else if (WIN.cur !== "mac") renderWinPc(WIN.pcs.find(p => p.id === WIN.cur));
+}
+function renderWinAdd() {
+  const P = WIN.pair, cmd = P ? `irm https://${location.host}/agent/install.ps1?c=${P.code} | iex` : "";
+  const box = $("#rm-win"), key = "add:" + (P ? P.code : "");
+  if (box.dataset.key === key) { if (P) $("#wPairLeft").textContent = Math.max(0, Math.ceil((P.expires * 1000 - Date.now()) / 60000)) + " 分鐘內有效"; return; }
+  box.dataset.key = key;
+  box.innerHTML = `<div class="card"><div class="win-head"><span class="badge devbadge" style="--c:#0a84ff">${icon("monitor")}</span><div class="grow"><div class="t">遙控 Windows 電腦</div><div class="s small muted">像遙控 Mac 一樣：音樂、音量、通知、鎖定、截圖、關機</div></div></div></div>
+    <div class="card"><h2>步驟</h2><ol class="win-steps">
+      <li>Windows 先裝好 <b>Tailscale</b>，登入<b>跟手機一樣的帳號</b>並打開</li>
+      <li>按下面的「產生安裝指令」</li>
+      <li>在 Windows 按<b>開始</b>，輸入 <b>PowerShell</b> 打開（不用系統管理員）</li>
+      <li>貼上指令，按 Enter，看到綠色的「完成」就好了</li></ol>
+      ${P ? `<div class="st" style="margin:12px 0 6px;font-weight:700">安裝指令 <span class="small muted" id="wPairLeft">${Math.max(0, Math.ceil((P.expires * 1000 - Date.now()) / 60000))} 分鐘內有效</span></div>
+        <div class="win-cmd" id="wCmd">${esc(cmd)}</div>
+        <div class="btns" style="margin-top:10px"><button class="btn primary" id="wCopy">${icon("clipboard")}複製指令</button><button class="btn" id="wPair">${icon("refresh")}重新產生</button></div>
+        <div class="small muted" style="margin-top:10px">可以把指令用 LINE 或 email 傳到 Windows 再貼上。指令只能用一次，裝好後這頁會自動切到那台電腦。</div>`
+      : `<div class="btns" style="margin-top:12px"><button class="btn primary" id="wPair">${icon("plus")}產生安裝指令</button></div>`}</div>
+    <div class="card"><h2>安全嗎？</h2><div class="small muted" style="line-height:1.7">遙控程式只接受這個控制台的指令，而且只透過 Tailscale；Windows 不用開任何連接埠。它只會做上面列的那幾件事，不能執行任意程式。新增電腦時你會收到通知，隨時可以在這裡移除。</div></div>`;
+}
+const pct = (a, b) => b ? Math.round(a / b * 100) : null;
+function winStat(k, v, p) { return `<div><div class="k">${k}</div><div class="v">${v ?? "—"}</div>${p != null ? `<div class="bar"><i style="width:${Math.max(0, Math.min(100, p))}%"></i></div>` : ""}</div>`; }
+function renderWinPc(pc) {
+  const box = $("#rm-win"), st = pc.stats || {}, m = st.media;
+  const status = pc.online ? (st.locked ? "在線・已鎖定" : st.idle_s > 300 ? `在線・閒置 ${Math.floor(st.idle_s / 60)} 分鐘` : "在線・使用中") : `離線・最後上線 ${ago(pc.seen)}`;
+  if (box.dataset.key !== "pc:" + pc.id) {
+    box.dataset.key = "pc:" + pc.id; WIN.drafts = {};
+    box.innerHTML = `<div class="card"><div class="win-head"><span class="badge devbadge" style="--c:#0a84ff">${icon("monitor")}</span><div class="grow" style="min-width:0"><div class="t" id="wName"></div><div class="s small muted" id="wStatus"></div></div></div>
+        <div class="win-stats" id="wStats"></div></div>
+      <div class="card"><h2>音樂</h2><div class="np" id="wNp"></div>
+        <div class="media-btns"><button class="btn round" data-wmedia="prev">${icon("prev")}</button><button class="btn primary round big" data-wmedia="playpause">${icon("playpause")}</button><button class="btn round" data-wmedia="next">${icon("next")}</button></div>
+        <div class="vol"><button class="btn sm round" data-wc="mute">${icon("mute")}</button><input type="range" id="wVol" min="0" max="100"><span class="small muted" id="wVolVal"></span></div></div>
+      <div class="card"><h2>螢幕</h2><div class="quick two">
+        <button class="qbtn" data-wc="screenshot">${icon("camera")}<span>擷取畫面</span></button>
+        <button class="qbtn" data-wc="lock">${icon("lock")}<span>鎖定</span></button>
+        <button class="qbtn" data-wc="display_off">${icon("moon")}<span>關螢幕</span></button>
+        <button class="qbtn" data-wc="sleep" data-confirm-text="再按一次：睡眠">${icon("pause")}<span>睡眠</span></button></div>
+        <img class="shot" id="wShot" hidden alt="Windows 螢幕截圖"></div>
+      <div class="card"><h2>電源</h2><div class="btns">
+        <button class="btn danger" data-wc="shutdown" data-confirm-text="再按一次：1 分鐘後關機">${icon("power")}關機</button>
+        <button class="btn" data-wc="restart" data-confirm-text="再按一次：1 分鐘後重開">${icon("refresh")}重新開機</button>
+        <button class="btn" data-wc="cancel_shutdown">${icon("x")}取消關機</button></div>
+        <div class="small muted" style="margin-top:8px">關機和重開會先等 1 分鐘，電腦上會跳出提示，這段時間內可以按「取消關機」。</div></div>
+      <div class="card"><h2>傳訊息給這台電腦</h2><input type="text" id="wMsg" placeholder="輸入文字…">
+        <div class="btns" style="margin-top:8px"><button class="btn primary" data-wc="notify">${icon("message")}跳出通知</button><button class="btn" data-wc="say">${icon("speak")}念出來</button></div></div>
+      <div class="card"><h2>剪貼簿同步</h2><textarea id="wClip" placeholder="電腦剪貼簿內容會出現在這裡"></textarea>
+        <div class="btns" style="margin-top:8px"><button class="btn" data-wc="clipboard_get">${icon("down")}讀取</button><button class="btn primary" data-wc="clipboard_set">${icon("up")}送到電腦</button><button class="btn" id="wClipCopy">${icon("clipboard")}複製</button></div></div>
+      <div class="card"><h2>在電腦上開網址</h2><div class="inline"><input type="url" id="wUrl" placeholder="https://…" autocapitalize="off"><button class="btn primary" data-wc="open_url">${icon("globe")}開啟</button></div></div>
+      <div class="card"><h2>管理</h2><div class="inline"><input type="text" id="wRename" maxlength="40" placeholder="電腦名稱"><button class="btn" id="wRenameBtn">${icon("edit")}改名</button></div>
+        <div class="btns" style="margin-top:10px"><button class="btn danger" id="wRemove" data-confirm-text="再按一次確定移除">${icon("trash")}移除這台電腦</button></div>
+        <div class="small muted" style="margin-top:8px" id="wMeta"></div></div>`;
+    $("#wRename").value = pc.name;
+  }
+  $("#wName").textContent = pc.name; $("#wStatus").textContent = status;
+  $("#wStats").innerHTML = [winStat("CPU", st.cpu_pct != null ? st.cpu_pct + "%" : null, st.cpu_pct),
+    winStat("記憶體", st.mem_total ? `${pct(st.mem_used, st.mem_total)}%・${fmtB(st.mem_total)}` : null, pct(st.mem_used, st.mem_total)),
+    winStat("系統碟", st.disk_total ? `${fmtB(st.disk_total - st.disk_used)} 可用` : null, pct(st.disk_used, st.disk_total)),
+    winStat("電源", st.battery != null ? `${st.battery}%${st.on_ac ? "・插電" : ""}` : st.on_ac === false ? "電池" : st.on_ac ? "插電" : null, st.battery),
+    winStat("開機時間", st.uptime_s != null ? fmtDur(st.uptime_s) : null), winStat("使用者", st.user ? esc(st.user) : null)].join("");
+  $("#wNp").innerHTML = m && m.track ? `<div class="art">${icon(m.state === "playing" ? "music" : "pause")}</div><div class="grow" style="min-width:0"><div class="t">${esc(m.track)}</div><div class="s">${esc(m.artist || "")}${m.artist ? "・" : ""}${esc(m.app || "")}</div></div>`
+    : `<div class="art">${icon("music")}</div><div class="muted">${pc.online ? "沒有在播放" : "電腦離線"}</div>`;
+  if (st.volume != null && document.activeElement !== $("#wVol") && Date.now() - (WIN.volAt || 0) > 3000) { $("#wVol").value = st.volume; $("#wVolVal").textContent = st.muted ? "（靜音）" : st.volume; }
+  $("#wMeta").textContent = `${st.os || "Windows"}・${pc.login}・${new Date(pc.created * 1000).toLocaleDateString("zh-TW")} 加入`;
+  $$("#rm-win [data-wc], #rm-win [data-wmedia]").forEach(b => b.disabled = !pc.online);
+}
+async function winCmd(cmd, arg, okMsg) {
+  return act("win_cmd", { id: WIN.cur, cmd, arg: arg || {} }, okMsg);
+}
+function armConfirm(b) {  // dangerous buttons need a second tap within 3 s
+  if (b.dataset.armed) { delete b.dataset.armed; b.innerHTML = b.dataset.orig; return true; }
+  b.dataset.armed = "1"; b.dataset.orig = b.innerHTML; b.textContent = b.dataset.confirmText;
+  setTimeout(() => { if (b.dataset.armed) { delete b.dataset.armed; b.innerHTML = b.dataset.orig; } }, 3000);
+  return false;
+}
+document.addEventListener("click", async e => {
+  const seg = e.target.closest("#rmSeg [data-rm]");
+  if (seg) { WIN.cur = seg.dataset.rm; renderRemote(); if (WIN.cur !== "mac") loadWin(); return; }
+  const t = e.target.closest("#rm-win button"); if (!t) return;
+  if (t.id === "wPair") {
+    try { const d = await act("win_pair"); WIN.pair = { code: d.code, expires: d.expires, count: (WIN.pcs || []).length }; renderWinAdd(); } catch { return; }
+    clearInterval(WIN.pairT);  // watch closely for the PC to finish installing
+    WIN.pairT = setInterval(() => { if (!WIN.pair || Date.now() > WIN.pair.expires * 1000) { clearInterval(WIN.pairT); return; } if (!document.hidden) loadWin(); }, 2000);
+    return;
+  }
+  if (t.id === "wCopy") { try { await navigator.clipboard.writeText($("#wCmd").textContent); toast("已複製指令", "ok"); } catch { toast("請長按指令選取後複製"); } return; }
+  if (t.id === "wClipCopy") { try { await navigator.clipboard.writeText($("#wClip").value); toast("已複製到手機"); } catch { $("#wClip").select(); toast("請長按選取後複製"); } return; }
+  if (t.id === "wRenameBtn") { const n = $("#wRename").value.trim(); if (n) { await act("win_rename", { id: WIN.cur, name: n }, "已改名").catch(() => {}); loadWin(); } return; }
+  if (t.id === "wRemove") {
+    if (!armConfirm(t)) return;
+    const pc = WIN.pcs.find(p => p.id === WIN.cur);
+    try { if (pc && pc.online) await winCmd("uninstall", {}, "已從這台電腦移除遙控程式"); else await act("win_remove", { id: WIN.cur }, "已移除（電腦下次開機連線時會自動解除安裝）"); } catch { return; }
+    WIN.cur = "mac"; loadWin(); return;
+  }
+  if (t.dataset.wmedia) { winCmd("media", { cmd: t.dataset.wmedia }).catch(() => {}); return; }
+  const c = t.dataset.wc; if (!c) return;
+  if (t.dataset.confirmText && !armConfirm(t)) return;
+  const v = id => $(id).value.trim();
+  try {
+    if (c === "notify" || c === "say") { if (!v("#wMsg")) return toast("先輸入文字", "alert"); await winCmd(c, { text: v("#wMsg") }, c === "notify" ? "已傳送通知" : "念出來了"); }
+    else if (c === "open_url") { let u = v("#wUrl"); if (!u) return; if (!/^https?:\/\//i.test(u)) u = "https://" + u; await winCmd(c, { url: u }, "已在電腦上開啟"); }
+    else if (c === "clipboard_get") { const d = await winCmd(c); $("#wClip").value = d.text || ""; toast(d.text ? "已讀取" : "電腦剪貼簿是空的"); }
+    else if (c === "clipboard_set") await winCmd(c, { text: $("#wClip").value }, "已送到電腦");
+    else if (c === "screenshot") { t.disabled = true; toast("擷取中…"); try { const d = await winCmd(c); $("#wShot").src = d.image; $("#wShot").hidden = false; } finally { t.disabled = false; } }
+    else if (c === "mute") { const d = await winCmd(c); $("#wVolVal").textContent = d.muted ? "（靜音）" : $("#wVol").value; }
+    else if (c === "shutdown" || c === "restart") await winCmd(c, { seconds: 60 }, c === "shutdown" ? "1 分鐘後關機" : "1 分鐘後重新開機");
+    else await winCmd(c, {}, { lock: "已鎖定", display_off: "已關閉螢幕", sleep: "電腦睡眠中", cancel_shutdown: "已取消關機" }[c]);
+  } catch {}
+});
+var wVolT;
+document.addEventListener("input", e => {
+  if (e.target.id !== "wVol") return;
+  $("#wVolVal").textContent = e.target.value; WIN.volAt = Date.now();
+  clearTimeout(wVolT); wVolT = setTimeout(() => winCmd("volume", { level: +e.target.value }).catch(() => {}), 250);
 });
 
 // ---------- shares + backup ----------

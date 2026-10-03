@@ -29,6 +29,7 @@ KINDS = {
     "kick_pw": ("踢人密碼輸錯", "warn"),
     "oversize": ("擋下超大請求", "warn"),
     "backup_denied": ("沒開放的自動備份", "info"),
+    "agent_bad": ("Windows 遙控配對碼／金鑰錯誤", "warn"),
 }
 # how many events of these kinds from one address within an hour gets it banned for a day
 BAN_RULES = {"bad_token": 40, "share_bad": 40, "share_pw": 25, "portal_pw": 20, "csrf": 10, "oversize": 10}

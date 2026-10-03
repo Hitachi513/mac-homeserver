@@ -27,6 +27,8 @@
 !dashboard/index.html
 !dashboard/portal.html
 !dashboard/share.html
+!dashboard/winagent/
+!dashboard/winagent/*.ps1
 !dashboard/static/
 !dashboard/static/drive.js
 !dashboard/static/sw.js

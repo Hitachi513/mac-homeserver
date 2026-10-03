@@ -6,6 +6,7 @@ Tailscale-User-Login header. Every /api request must carry that header, so a ran
 page in a local browser can't drive these endpoints (browsers can't set it cross-origin).
 """
 import base64
+import getpass
 import collections
 import hashlib
 import hmac
@@ -19,6 +20,7 @@ import threading
 import uuid as uuidlib
 
 import applock
+import winagent
 import drive
 import notify
 import macstats
@@ -334,6 +336,7 @@ def system_info():
     ac_sleep = re.search(r"^\s*sleep\s+(\d+)", pm, re.M)
     return {
         "hostname": socket.gethostname(),
+        "user": getpass.getuser(),
         "os": run(["sw_vers", "-productVersion"])[1].strip(),
         "model": sysctl("hw.model"),
         "chip": sysctl("machdep.cpu.brand_string"),
@@ -532,6 +535,26 @@ def action(name, arg, who):
         code, _, err = osa(f'tell application "{now["app"]}" to {cmd}')
         log_event(who, f"{now['app']}：{arg.get('cmd')}")
         return {"ok": code == 0, "error": err.strip()}
+    if name == "win_pair":
+        log_event(who, "產生 Windows 遙控配對碼")
+        return {"ok": True, **winagent.new_code()}
+    if name == "win_cmd":
+        aid, cmd = str(arg.get("id", "")), str(arg.get("cmd", ""))
+        r = winagent.send(aid, cmd, arg.get("arg") or {}, timeout=25 if cmd == "screenshot" else 15)
+        if r.get("ok"):
+            detail = {"notify": "：" + str((arg.get("arg") or {}).get("text", ""))[:60], "open_url": "：" + str((arg.get("arg") or {}).get("url", ""))[:80],
+                      "volume": f" {(arg.get('arg') or {}).get('level')}", "media": f" {(arg.get('arg') or {}).get('cmd')}"}.get(cmd, "")
+            log_event(who, f"🖥️ {winagent.name_of(aid)}：{winagent.COMMANDS.get(cmd, cmd)}{detail}")
+            if cmd == "uninstall":
+                winagent.remove(aid)
+        return r
+    if name == "win_rename":
+        winagent.rename(str(arg.get("id", "")), arg.get("name"))
+        return {"ok": True}
+    if name == "win_remove":
+        n = winagent.remove(str(arg.get("id", "")))
+        log_event(who, f"🖥️ 移除 Windows 遙控：{n}")
+        return {"ok": True}
     if name == "kick_device":
         err = check_kick_pw(arg.get("password"), who)
         if err:
@@ -3021,6 +3044,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
         q = urllib.parse.parse_qs(u.query)
+        if u.path.startswith("/agent/"):
+            return self.agent_route("GET")
         if u.path in ("/", "/index.html"):
             if not self.authed():
                 return
@@ -3072,6 +3097,10 @@ class Handler(BaseHTTPRequestHandler):
         if not self.authed(*need):
             return
         try:
+            if u.path == "/api/win":
+                if self.role != "owner":
+                    return self.send_json({"ok": False, "error": "你沒有這個功能的權限"}, 403)
+                return self.send_json({"ok": True, "pcs": winagent.listing()})
             if u.path == "/api/overview":
                 owner, caps = self.role == "owner", self.caps
                 d = {"me": {"login": self.login, "name": self.headers.get("Tailscale-User-Name"),
@@ -3218,6 +3247,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
+        if u.path.startswith("/agent/"):
+            return self.agent_route("POST")
         if not self.authed(owner_only=u.path.startswith("/api/drive/")):
             return
         if not self.same_origin():
@@ -3262,13 +3293,63 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json({"ok": False, "error": str(e)}, 500)
 
-    def read_json(self):
+    def read_json(self, limit=MAX_JSON):
         n = int(self.headers.get("Content-Length", 0) or 0)
-        if n > MAX_JSON:
+        if n > limit:
             security.record("oversize", None, f"{n} bytes", who=getattr(self, "login", None))
             self.close_connection = True
             raise ValueError("資料太大")
         return json.loads(self.rfile.read(n) or b"{}")
+
+    def send_ps1(self, text, code=200):
+        body = text.encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def agent_route(self, method):
+        """The Windows remote agent (winagent.py). Outside the app lock: it proves itself with a one-time pairing
+        code, then with its own token, and must always come through Tailscale from the account it paired from."""
+        u = urllib.parse.urlparse(self.path)
+        if not self.from_tailscale():
+            return self.send_json({"ok": False, "error": "只接受經由 Tailscale 的連線"}, 403)
+        login = self.headers.get("Tailscale-User-Login")
+        if not login:
+            return self.send_json({"ok": False, "error": "請先打開 Tailscale"}, 403)
+        try:
+            if method == "GET" and u.path == "/agent/install.ps1":
+                code = (urllib.parse.parse_qs(u.query).get("c") or [""])[0].upper()
+                host = (self.headers.get("Host") or "").split(":")[0]
+                if not winagent.code_ok(code) or not re.match(r"^[A-Za-z0-9.-]+$", host):
+                    security.record("agent_bad", None, "配對碼錯誤", who=login)
+                    return self.send_ps1("Write-Host '配對碼錯誤或已過期，請在控制台重新產生' -ForegroundColor Red\n", 403)
+                return self.send_ps1(winagent.script("install", host=host, code=code))
+            if method == "POST" and u.path == "/agent/pair":
+                body = self.read_json()
+                try:
+                    aid, token = winagent.pair(body.get("code"), body.get("name"), login)
+                except PermissionError as e:
+                    security.record("agent_bad", None, "配對碼錯誤", who=login)
+                    return self.send_json({"ok": False, "error": str(e)}, 403)
+                log_event(login, f"🖥️ 新增 Windows 遙控：{winagent.name_of(aid)}")
+                notify.send("security", "新增了一台可以遙控的 Windows 電腦", f"{winagent.name_of(aid)}（{login}）。不是你加的話，到 遙控 → 這台電腦 → 移除", "/#remote")
+                return self.send_json({"ok": True, "token": token})
+            aid = winagent.auth(self.headers.get("X-Agent-Token"), login)
+            if aid == "revoked":
+                return self.send_json({"ok": False, "revoked": True}, 410)
+            if not aid:
+                security.record("agent_bad", None, "遙控金鑰錯誤", who=login)
+                return self.send_json({"ok": False, "error": "unknown agent"}, 401)
+            if method == "GET" and u.path == "/agent/agent.ps1":
+                return self.send_ps1(winagent.script("agent"))
+            if method == "POST" and u.path == "/agent/sync":
+                return self.send_json(winagent.sync(aid, self.read_json(limit=8 << 20)))  # screenshots ride along
+        except ValueError as e:
+            return self.send_json({"ok": False, "error": str(e)}, 400)
+        self.send_error(404)
 
     def lock_post(self, op, body):
         login, token = self.login, self.cookie(applock.COOKIE)
