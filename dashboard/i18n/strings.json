@@ -8735,6 +8735,13 @@
   "ko": "직접 연결 {1}",
   "zh-CN": "直连 {1}"
  },
+ "相機備份": {
+  "en": "Camera backup",
+  "es": "Copia de la cámara",
+  "ja": "カメラバックアップ",
+  "ko": "카메라 백업",
+  "zh-CN": "相机备份"
+ },
  "看 Mac 畫面": {
   "en": "See the Mac's screen",
   "es": "Ver la pantalla del Mac",

@@ -40,6 +40,8 @@ EXTRA = [
     "已啟用，{1} 條規則（{2} 分鐘前回報）", "已啟用，{1} 條規則（超過 30 分鐘沒有回報）", "規則沒有載入（{1} 分鐘前回報）",
     "規則沒有載入（超過 30 分鐘沒有回報）", "{1}：已由封包過濾限制為只有 Tailscale", "{1}：目前家裡網路也連得到",
     "{1} 核心（{2} 效能 + {3} 節能）", "{1} 記憶體", "Wi-Fi（{1}）",
+    # the photo-backup folder the server creates (shown as a folder name in the cloud)
+    "相機備份",
     # short words for the bottom bar (navLabel in index.html)
     "選單：首頁", "選單：雲端", "選單：擋廣告", "選單：遙控", "選單：成員", "選單：設定",
 ]

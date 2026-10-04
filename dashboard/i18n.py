@@ -132,7 +132,7 @@ def _via_patterns(body, lang, strict):
             v = v or ""
             tv = v.strip()
             tr = _core(tv, lang) if HAN.search(tv) else tv
-            if strict and HAN.search(tv) and tr == tv:
+            if strict and HAN.search(tv) and (tr == tv or "・" in tv):
                 ok = False
                 break
             slots[n] = v.replace(tv, tr) if tv else v
@@ -153,7 +153,7 @@ def _core(body, lang, depth=0):
         parts = [p.strip() for p in body.split("・")]
         tr = [_core(p, lang, depth + 1) if _core(p, lang, depth + 1) != p else re.sub(r"^\s*[・·]\s*", "", tab.get("・" + p, p)) for p in parts]
         if tr != parts:
-            out = ("・" if lang.startswith(("zh", "ja")) else " · ").join(x for x in tr if x)
+            out = ("・" if lang.startswith(("zh", "ja")) else " · ").join(tr).strip()
     if out is None and "、" in body:
         parts = [p.strip() for p in body.split("、")]
         tr = [_core(p, lang, depth + 1) for p in parts]

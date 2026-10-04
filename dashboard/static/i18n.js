@@ -38,7 +38,7 @@
   const memo = new Map();
   const WIDE = /^(zh|ja)/.test(LANG), SEP = WIDE ? "・" : " · ";
   // after translating into a language without full-width punctuation, tidy the leftovers (e.g. data like "SSH（22）")
-  const narrow = s => WIDE ? s : s.replace(/\s*（/g, " (").replace(/）/g, ")").replace(/：\s*/g, ": ").replace(/，\s*/g, ", ").replace(/、\s*/g, ", ").replace(/^ /, "");
+  const narrow = s => WIDE ? s : s.replace(/\s*（/g, " (").replace(/）/g, ")").replace(/：\s*/g, ": ").replace(/，\s*/g, ", ").replace(/、\s*/g, ", ").replace(/^ \(/, "(");
   // a template matches if every blank holds no Chinese, or Chinese that itself translates (strict); the loose pass
   // (names and other free text in a blank) only runs after the safer ways below have failed
   function viaPatterns(s, strict) {
@@ -46,7 +46,7 @@
       const m = p.re.exec(s); if (!m) continue;
       const slot = {}; let ok = true;
       p.order.forEach((n, i) => { const v = m[i + 1] || "", tv = v.trim(); let tr = tv;
-        if (HAN.test(tv)) { tr = core(tv); if (strict && tr === tv) ok = false; }
+        if (HAN.test(tv)) { tr = core(tv); if (strict && (tr === tv || tv.includes("・"))) ok = false; }  // a "・" list in a blank: split it instead
         slot[n] = tv ? v.replace(tv, tr) : v; });
       if (ok) return p.to.replace(/\{(\d+)\}/g, (x, n) => slot[n] === undefined ? x : slot[n]);
     }
@@ -61,7 +61,7 @@
     memo.set(s, s);  // guards against recursion through the steps below
     let out = DICT[s];
     if (out === undefined) out = viaPatterns(s, true);
-    if (out === undefined && s.includes("・")) { const ps = s.split("・").map(x => x.trim()); const tr = ps.map(part); if (tr.some((x, i) => x !== ps[i])) out = tr.filter(Boolean).join(SEP); }
+    if (out === undefined && s.includes("・")) { const ps = s.split("・").map(x => x.trim()); const tr = ps.map(part); if (tr.some((x, i) => x !== ps[i])) out = tr.join(SEP).trim(); }
     if (out === undefined && s.includes("、")) { const ps = s.split("、").map(x => x.trim()); const tr = ps.map(core); if (tr.some((x, i) => x !== ps[i])) out = tr.join(/^(zh|ja)/.test(LANG) ? "、" : ", "); }
     if (out === undefined) { const m = /^([●○•#\d\s%.,:+\-]+)([\s\S]*[\u3400-\u9fff][\s\S]*)$/.exec(s); if (m) { const r = core(m[2]); if (r !== m[2]) out = m[1] + r; } }
     if (out === undefined) { const m = /^([\s\S]*[\u3400-\u9fff][\s\S]*?)\s*([（(][^\u3400-\u9fff（）()]*[）)])$/.exec(s); if (m) { const r = core(m[1]); if (r !== m[1]) out = r + (WIDE ? m[2] : " " + m[2].replace("（", "(").replace("）", ")")); } }
