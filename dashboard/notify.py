@@ -226,3 +226,9 @@ class Throttle:
             return False
         self.last[key] = now
         return True
+
+    def sweep(self, keep=86400):
+        """Forget keys that haven't fired in `keep` seconds (the panel is reachable from the public Funnel)."""
+        now = time.time()
+        for k in [k for k, t in self.last.items() if now - t > keep]:
+            del self.last[k]

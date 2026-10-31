@@ -409,6 +409,24 @@ def mkdir(scope, vpath, name):
     return {"ok": True}
 
 
+def mkdir_path(scope, vpath):
+    """Create every missing folder on the way to vpath (iPhone Shortcut backups).
+    Goes through resolve() so each segment gets the same "..", hidden-name and symlink checks."""
+    root, real = resolve(scope, vpath, must_exist=False)
+    _need_write(root)
+    cur = os.path.realpath(root.path)
+    for p in [x for x in str(vpath or "").split("/") if x][1:]:
+        cur = os.path.join(cur, p)
+        if os.path.islink(cur):
+            raise DriveError("找不到這個位置", 404)
+        if not os.path.isdir(cur):
+            try:
+                os.mkdir(cur)
+            except FileExistsError:  # two uploads creating the same folder at the same time
+                pass
+    return {"ok": True}
+
+
 def delete(scope, vpath):
     root, real = resolve(scope, vpath)
     _need_write(root)
@@ -446,10 +464,16 @@ def upload(scope, vpath, name, length, rfile):
         raise DriveError("硬碟空間不足", 507)
     name = clean_name(name)
     base, ext = os.path.splitext(name)
-    target, n = os.path.join(real, name), 1
-    while os.path.exists(target):
-        target = os.path.join(real, f"{base} ({n}){ext}")
-        n += 1
+    n = 1
+    while True:  # claim the name with O_EXCL, so two uploads of the same name never share a file
+        target = os.path.join(real, name if n == 1 else f"{base} ({n - 1}){ext}")
+        try:
+            fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError:
+            n += 1
+            continue
+        os.close(fd)
+        break
     part = target + ".uploading"
     done = 0
     try:
@@ -462,10 +486,12 @@ def upload(scope, vpath, name, length, rfile):
                 done += len(chunk)
         if done != length:
             raise DriveError("上傳中斷")
-        os.rename(part, target)
+        os.replace(part, target)
     finally:
         if os.path.exists(part):
             remove(part)
+        if done != length and os.path.exists(target):
+            remove(target)  # give the reserved name back after a failed upload
     invalidate(root.path)
     return {"ok": True, "name": os.path.basename(target)}
 

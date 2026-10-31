@@ -30,7 +30,7 @@ cat > /Library/LaunchDaemons/$PF_LABEL.plist <<PLIST
 <plist version="1.0"><dict>
   <key>Label</key><string>$PF_LABEL</string>
   <key>ProgramArguments</key><array><string>/bin/sh</string><string>-c</string>
-    <string>/sbin/pfctl -E 2>/dev/null; /sbin/pfctl -a com.apple/250.homeserver -f /etc/pf.anchors/homeserver 2>/dev/null; { date +%s; /sbin/pfctl -s info 2>/dev/null | head -1; /sbin/pfctl -a com.apple/250.homeserver -sr 2>/dev/null | grep -c . ; /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate; /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode; /usr/bin/fdesetup status; } > "$STATUS"; chown $OWNER "$STATUS"; chmod 644 "$STATUS"</string></array>
+    <string>/sbin/pfctl -E 2>/dev/null; /sbin/pfctl -a com.apple/250.homeserver -f /etc/pf.anchors/homeserver 2>/dev/null; { date +%s; /sbin/pfctl -s info 2>/dev/null | head -1; /sbin/pfctl -a com.apple/250.homeserver -sr 2>/dev/null | grep -c . ; /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate; /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode; /usr/bin/fdesetup status; } > "$STATUS"; chown "$OWNER" "$STATUS"; chmod 644 "$STATUS"</string></array>
   <key>RunAtLoad</key><true/>
   <key>StartInterval</key><integer>600</integer>
 </dict></plist>

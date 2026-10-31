@@ -923,6 +923,7 @@ def kick_status():
 # ---------- Per-person permissions (Tailscale ACL + AdGuard clients) ----------
 
 _policy_lock = threading.Lock()
+_members_lock = threading.RLock()  # one load→change→save at a time; save_members also takes it (reentrant)
 _policy_state = {"hash": None, "last_error": None, "last_applied": None}
 
 
@@ -985,9 +986,14 @@ def load_members():
 
 
 def save_members(d):
-    fd = os.open(PERMS_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w") as f:
-        json.dump(d, f, ensure_ascii=False, indent=1)
+    """Replace members.json atomically: a reader never sees a half-written file (and thus no empty member list)."""
+    with _members_lock:
+        fd = os.open(PERMS_FILE + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            json.dump(d, f, ensure_ascii=False, indent=1)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(PERMS_FILE + ".tmp", PERMS_FILE)
 
 
 def person_active(p, now=None):
@@ -1138,69 +1144,88 @@ def apply_policy(reason, who="系統", force=False):
 
 def sync_agh_clients():
     """One AdGuard persistent client per member with personal filtering, keyed by their devices' tailnet IPs."""
-    data = load_members()
-    devs = api_devices()
-    want = {}
-    for p in data["people"]:
-        f = p["filter"]
-        ips = sorted({ip for d in devs if d["user"] == p["login"] for ip in d["ips"]})
-        if not f["on"] or not ips:
-            continue
-        want["ts:" + p["login"]] = {
-            "name": "ts:" + p["login"], "ids": ips, "use_global_settings": False,
-            "filtering_enabled": f["ads"], "parental_enabled": f["adult"], "safebrowsing_enabled": f["malware"],
-            "safe_search": {"enabled": f["safesearch"], "bing": True, "duckduckgo": True, "ecosia": True, "google": True,
-                            "pixabay": True, "yandex": True, "youtube": True},
-            "use_global_blocked_services": False, "blocked_services": sorted(f["blocked"]),
-            "blocked_services_schedule": {"time_zone": "Local"},
-            "upstreams": [], "tags": [], "ignore_querylog": False, "ignore_statistics": False,
-        }
-    have = {c["name"]: c for c in (agh("clients").get("clients") or []) if c.get("name", "").startswith("ts:")}
-    keys = ["ids", "filtering_enabled", "parental_enabled", "safebrowsing_enabled", "blocked_services"]
-    for name, c in have.items():
-        if name not in want:
-            agh("clients/delete", "POST", {"name": name})
-    for name, c in want.items():
-        old = have.get(name)
-        if old and all(sorted(old.get(k) or []) == sorted(c[k]) if isinstance(c[k], list) else old.get(k) == c[k] for k in keys) \
-                and (old.get("safe_search") or {}).get("enabled") == c["safe_search"]["enabled"]:
-            continue
-        if old:
-            agh("clients/update", "POST", {"name": name, "data": c})
-        else:
-            agh("clients/add", "POST", c)
+    with _policy_lock:  # add/update/delete is not atomic; a concurrent save would duplicate or delete clients
+        data = load_members()
+        devs = api_devices()
+        want = {}
+        for p in data["people"]:
+            f = p["filter"]
+            ips = sorted({ip for d in devs if d["user"] == p["login"] for ip in d["ips"]})
+            if not f["on"] or not ips:
+                continue
+            want["ts:" + p["login"]] = {
+                "name": "ts:" + p["login"], "ids": ips, "use_global_settings": False,
+                "filtering_enabled": f["ads"], "parental_enabled": f["adult"], "safebrowsing_enabled": f["malware"],
+                "safe_search": {"enabled": f["safesearch"], "bing": True, "duckduckgo": True, "ecosia": True, "google": True,
+                                "pixabay": True, "yandex": True, "youtube": True},
+                "use_global_blocked_services": False, "blocked_services": sorted(f["blocked"]),
+                "blocked_services_schedule": {"time_zone": "Local"},
+                "upstreams": [], "tags": [], "ignore_querylog": False, "ignore_statistics": False,
+            }
+        have = {c["name"]: c for c in (agh("clients").get("clients") or []) if c.get("name", "").startswith("ts:")}
+        keys = ["ids", "filtering_enabled", "parental_enabled", "safebrowsing_enabled", "blocked_services"]
+        for name, c in have.items():
+            if name not in want:
+                agh("clients/delete", "POST", {"name": name})
+        for name, c in want.items():
+            old = have.get(name)
+            if old and all(sorted(old.get(k) or []) == sorted(c[k]) if isinstance(c[k], list) else old.get(k) == c[k] for k in keys) \
+                    and (old.get("safe_search") or {}).get("enabled") == c["safe_search"]["enabled"]:
+                continue
+            if old:
+                agh("clients/update", "POST", {"name": name, "data": c})
+            else:
+                agh("clients/add", "POST", c)
 
 
 def policy_scheduler():
     """Every minute: re-apply the ACL when expiry/schedule flips someone's access; resync AdGuard every 5 min."""
     n = 0
+
+    def job(label, fn):  # one failing job must not stop the others (e.g. Tailscale API down ≠ stop usage/monitoring)
+        try:
+            fn()
+        except Exception as e:
+            log_event("系統", f"⚠️ 自動{label}失敗：{e}")
+
     while True:
         time.sleep(60)
         n += 1
+        data = None
         try:
             data = load_members()
-            if data.get("managed") and kick_status()["has_api"]:
-                apply_policy("排程")
-                if n % 5 == 0:
-                    sync_agh_clients()
-            if data.get("sr_owner"):
-                apply_xray("排程")
-            usage_tick()
-            monitor_tick()
-            if n % 9 == 1:  # keep the slow Tailscale policy read warm so the security page opens instantly
-                try:
-                    _cache["sec-policy"] = (time.time(), get_policy()[0])
-                except Exception:
-                    pass
-            if n % 5 == 1:  # GitHub issues + private security reports, every 5 minutes
-                bugs.gh_sync(on_new=lambda i: notify.send("security", "🔒 收到資安漏洞的私下回報", f"{i['title']}（{i['author']}）：打開控制台 → 成員 → 回報", "/#members", urgent=True)
-                             if i.get("security") else notify.send("bug", "GitHub 有新的問題回報", f"#{i['number']} {i['title']}（{i['author']}）", "/#members"))
-            macstats.record()
-            _policy_state["last_error"] = None
         except Exception as e:
-            if _policy_state["last_error"] != str(e):
-                log_event("系統", f"⚠️ 自動套用權限失敗：{e}")
-            _policy_state["last_error"] = str(e)
+            log_event("系統", f"⚠️ 讀取成員設定失敗：{e}")
+        if data and data.get("managed"):
+            has_api = False
+            try:
+                has_api = bool(kick_status()["has_api"])
+            except Exception as e:
+                log_event("系統", f"⚠️ 讀取 Tailscale API 狀態失敗：{e}")
+            if has_api:
+                try:
+                    apply_policy("排程")
+                    _policy_state["last_error"] = None
+                    if n % 5 == 0:
+                        sync_agh_clients()
+                except Exception as e:
+                    if _policy_state["last_error"] != str(e):
+                        log_event("系統", f"⚠️ 自動套用權限失敗：{e}")
+                    _policy_state["last_error"] = str(e)
+        if data and data.get("sr_owner"):
+            job("更新 Xray 設定", lambda: apply_xray("排程"))
+        job("統計用量", usage_tick)
+        job("檢查服務", monitor_tick)
+        if n % 9 == 1:  # keep the slow Tailscale policy read warm so the security page opens instantly
+            try:
+                _cache["sec-policy"] = (time.time(), get_policy()[0])
+            except Exception:
+                pass
+        if n % 5 == 1:  # GitHub issues + private security reports, every 5 minutes
+            job("同步問題回報", lambda: bugs.gh_sync(on_new=lambda i: notify.send("security", "🔒 收到資安漏洞的私下回報", f"{i['title']}（{i['author']}）：打開控制台 → 成員 → 回報", "/#members", urgent=True)
+                                            if i.get("security") else notify.send("bug", "GitHub 有新的問題回報", f"#{i['number']} {i['title']}（{i['author']}）", "/#members")))
+        job("記錄系統狀態", macstats.record)
+        job("清理速率限制表", _sweep_limits)
 
 
 def member_role(login):
@@ -1286,12 +1311,15 @@ def members_save(arg, who):
             p["services"].append("dns")
         seen.add(p["login"])
         people.append(p)
-    old = load_members()
-    save_members({**old, "people": people, "managed": True})
+    with _members_lock:
+        old = load_members()
+        save_members({**old, "people": people, "managed": True})
     try:
         apply_policy("手動儲存", who, force=True)
     except Exception as e:
-        save_members(old)
+        with _members_lock:  # only roll back if nobody else saved a newer list meanwhile
+            if [p["login"] for p in load_members()["people"]] == [p["login"] for p in people]:
+                save_members(old)
         return {"ok": False, "error": str(e)}
     warn = []
     try:
@@ -1372,28 +1400,29 @@ def _bank_usage():
 
 def ensure_sr_owner():
     """Owner account + shared WebSocket path live in members.json; the first run replaces the hand-made key."""
-    data = load_members()
-    changed = False
-    st = ts_status()
-    if st.get("ok") and data.get("sr_host") != st["self"]["dns"]:
-        data["sr_host"] = st["self"]["dns"]
-        changed = True
-    if st.get("ok") and data.get("sr_mac_ip") != st["self"]["ips"][0]:
-        data["sr_mac_ip"] = st["self"]["ips"][0]
-        changed = True
-    if not valid_uuid((data.get("sr_owner") or {}).get("id")):
-        data["sr_owner"] = {"id": str(uuidlib.uuid4())}
-        changed = True
-    if not re.match(r"^/[a-z0-9]{12,}$", str(data.get("sr_path") or "")):
-        data["sr_path"] = "/" + os.urandom(8).hex()
-        changed = True
-    for person in data["people"]:
-        if not person["portal"]:  # members created before the portal existed
-            person["portal"] = os.urandom(16).hex()
+    with _members_lock:
+        data = load_members()
+        changed = False
+        st = ts_status()
+        if st.get("ok") and data.get("sr_host") != st["self"]["dns"]:
+            data["sr_host"] = st["self"]["dns"]
             changed = True
-    if changed:
-        save_members(data)
-    return data
+        if st.get("ok") and data.get("sr_mac_ip") != st["self"]["ips"][0]:
+            data["sr_mac_ip"] = st["self"]["ips"][0]
+            changed = True
+        if not valid_uuid((data.get("sr_owner") or {}).get("id")):
+            data["sr_owner"] = {"id": str(uuidlib.uuid4())}
+            changed = True
+        if not re.match(r"^/[a-z0-9]{12,}$", str(data.get("sr_path") or "")):
+            data["sr_path"] = "/" + os.urandom(8).hex()
+            changed = True
+        for person in data["people"]:
+            if not person["portal"]:  # members created before the portal existed
+                person["portal"] = os.urandom(16).hex()
+                changed = True
+        if changed:
+            save_members(data)
+        return data
 
 
 def own_addresses():
@@ -1525,7 +1554,10 @@ def apply_xray(reason, who="系統"):
         _xray_error["msg"] = None
         _bank_usage()
         os.replace(tmp, XRAY_CONFIG)
-        run(["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/{XRAY_LABEL}"])
+        code, out, err = run(["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/{XRAY_LABEL}"])
+        if code != 0:
+            _xray_error["msg"] = "Xray 設定已寫入，但重新啟動失敗（重新開機或手動 kickstart 後才會生效）：" + (out + err).strip()[-200:]
+            raise RuntimeError(_xray_error["msg"])
         n = len(cfg["inbounds"][0]["settings"]["clients"])
         log_event(who, f"Shadowrocket 設定已更新（{reason}）：{n} 個帳號可用")
         return True
@@ -1565,15 +1597,16 @@ def proxy_info():
 
 
 def proxy_rotate(target, who):
-    data = ensure_sr_owner()
-    if target in OWNERS:
-        data["sr_owner"]["id"] = str(uuidlib.uuid4())
-    else:
-        p = next((x for x in data["people"] if x["login"] == target and x["sr"]["on"]), None)
-        if not p:
-            return {"ok": False, "error": "找不到這個 Shadowrocket 帳號"}
-        p["sr"]["id"] = str(uuidlib.uuid4())
-    save_members(data)
+    with _members_lock:
+        data = ensure_sr_owner()
+        if target in OWNERS:
+            data["sr_owner"]["id"] = str(uuidlib.uuid4())
+        else:
+            p = next((x for x in data["people"] if x["login"] == target and x["sr"]["on"]), None)
+            if not p:
+                return {"ok": False, "error": "找不到這個 Shadowrocket 帳號"}
+            p["sr"]["id"] = str(uuidlib.uuid4())
+        save_members(data)
     apply_xray(f"更換 {target} 的金鑰", who)
     log_event(who, f"更換 Shadowrocket 金鑰：{target}（舊的立即失效）")
     return {"ok": True}
@@ -1582,6 +1615,19 @@ def proxy_rotate(target, who):
 # ---------- Member portal (public, read-only, token per person) ----------
 
 _portal_fails = collections.defaultdict(list)
+
+
+def _sweep_limits():
+    """Drop expired rate-limit keys so a public Funnel port cannot grow these dicts forever."""
+    now = time.time()
+    for table, window in ((_portal_fails, 600), (_share_fails, 900)):
+        for k in list(table.keys()):
+            keep = [t for t in table.get(k) or [] if now - t < window]
+            if keep:
+                table[k] = keep
+            else:
+                table.pop(k, None)
+    _thr.sweep()
 
 
 # ---------- security page: health checks + self attack test ----------
@@ -1918,12 +1964,13 @@ def portal_person(token):
 
 
 def portal_rotate(login, who):
-    data = load_members()
-    p = next((x for x in data["people"] if x["login"] == login), None)
-    if not p:
-        return {"ok": False, "error": "找不到這個成員"}
-    p["portal"] = os.urandom(16).hex()
-    save_members(data)
+    with _members_lock:
+        data = load_members()
+        p = next((x for x in data["people"] if x["login"] == login), None)
+        if not p:
+            return {"ok": False, "error": "找不到這個成員"}
+        p["portal"] = os.urandom(16).hex()
+        save_members(data)
     log_event(who, f"更換客戶端網址：{login}（舊網址立即失效）")
     return {"ok": True, "url": portal_url(p["portal"])}
 
@@ -2494,6 +2541,17 @@ def drive_usage():
             "mine_used": drive.dir_size(drive.user_dir(owner)) if drive.mounted() and os.path.isdir(drive.user_dir(owner)) else 0}
 
 
+def _discard(rfile, n):
+    """Read and throw away exactly n bytes, keeping at most 1 MB in memory (a Content-Length can be huge)."""
+    left = n
+    while left > 0:
+        chunk = rfile.read(min(1 << 20, left))
+        if not chunk:
+            return False
+        left -= len(chunk)
+    return True
+
+
 def drive_route(h, scope, sub, q, method, who):
     """Shared by the owner panel (/api/drive/*) and the member portal (/p/<token>/drive/*)."""
     arg = lambda k: (q.get(k) or [""])[0]
@@ -2539,15 +2597,12 @@ def drive_route(h, scope, sub, q, method, who):
                 name = urllib.parse.unquote(raw)
                 n = int(h.headers.get("Content-Length", 0))
                 if arg("mkdir") == "1":  # iPhone Shortcut backups: create the folder path on first upload
-                    root, real = drive.resolve(scope, "/" + arg("path").strip("/").split("/")[0])
-                    _need = os.path.join(real, *arg("path").strip("/").split("/")[1:])
-                    drive._need_write(root)
-                    os.makedirs(_need, exist_ok=True)
+                    drive.mkdir_path(scope, arg("path"))
                 if arg("skip_existing") == "1":
                     _, folder = drive.resolve(scope, arg("path"))
                     target = os.path.join(folder, drive.clean_name(name))
                     if os.path.isfile(target) and os.path.getsize(target) == n:
-                        h.rfile.read(n)
+                        _discard(h.rfile, n)
                         return h.send_json({"ok": True, "skipped": True, "name": os.path.basename(target)})
                 res = drive.upload(scope, arg("path"), name, n, h.rfile)
                 log_event(who, f"雲端上傳：{arg('path')}/{res['name']}")
@@ -3330,6 +3385,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(action(name, arg.get("arg") or {}, self.who()))
                 return
             self.send_error(404)
+        except TooLarge as e:
+            self.send_json({"ok": False, "error": str(e)}, 413)
         except Exception as e:
             self.send_json({"ok": False, "error": str(e)}, 500)
 
@@ -3338,7 +3395,7 @@ class Handler(BaseHTTPRequestHandler):
         if n > limit:
             security.record("oversize", None, f"{n} bytes", who=getattr(self, "login", None))
             self.close_connection = True
-            raise ValueError("資料太大")
+            raise TooLarge("資料太大")
         return json.loads(self.rfile.read(n) or b"{}")
 
     def send_ps1(self, text, code=200):
