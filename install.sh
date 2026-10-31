@@ -35,6 +35,12 @@ PY
 [ "$HERE" = "$BASE" ] || die "$(T '請把專案放在 {1}（git clone … ~/homeserver），程式裡的路徑固定在這裡' "$BASE")"
 [ "$(id -u)" != 0 ] || die "$(T '不要用 sudo 執行；需要管理員權限的步驟會另外提示')"
 
+# ---------------------------------------------------------------- 維護模式：只補推薦名單
+if [ "${1:-}" = "--refresh-adguard" ]; then
+  # 不重新安裝、不改寫 AdGuardHome.yaml；只透過本機 AdGuard API 補上缺少的項目
+  exec /usr/bin/python3 "$BASE/tools/adguard_sync.py"
+fi
+
 # ---------------------------------------------------------------- 1. requirements
 say "1) $(T '檢查需要的軟體')"
 TS="$(command -v tailscale || echo /Applications/Tailscale.app/Contents/MacOS/Tailscale)"
@@ -194,3 +200,5 @@ echo "  5. $(T '讓開著 Tailscale 的裝置都擋廣告：Tailscale 後台 →
 echo "     $(T '這台 Mac 自己要直接用 AdGuard（Tailscale 的 DNS 沒辦法轉給自己，不改會查不到網址）：')"
 echo "       networksetup -setdnsservers Wi-Fi 127.0.0.1 ::1 && \"$TS\" set --accept-dns=false"
 echo "  6. $(T '控制台 → 設定 → 安全，看安全分數並按「自我攻擊測試」。')"
+echo "  7. $(T '之後專案新增推薦的擋廣告名單時，可補上缺少的項目（只新增，不會改動你既有的設定）：')"
+echo "       bash $BASE/install.sh --refresh-adguard"

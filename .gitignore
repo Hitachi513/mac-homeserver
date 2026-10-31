@@ -34,6 +34,7 @@
 !dashboard/i18n/strings.json
 !tools/
 !tools/i18n_extract.py
+!tools/adguard_sync.py
 !dashboard/static/
 !dashboard/static/drive.js
 !dashboard/static/i18n.js
