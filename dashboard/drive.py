@@ -452,15 +452,21 @@ def rename(scope, vpath, new_name):
     return {"ok": True}
 
 
-def upload(scope, vpath, name, length, rfile):
-    """Stream the request body into vpath/name, enforcing the root's quota and the disk's free space."""
+def upload(scope, vpath, name, length, rfile, limit=0):
+    """Stream the request body into vpath/name, enforcing the root's quota, the disk's free space and `limit`.
+
+    `length` None means the body size is unknown (chunked); it then reads until EOF. Bytes are counted
+    while streaming, so a false/missing header can't get past the quota, the disk reserve or `limit`.
+    """
     root, real = resolve(scope, vpath)
     _need_write(root)
     if not os.path.isdir(real):
         raise DriveError("這不是資料夾")
-    if root.quota and dir_size(root.path, ttl=5, wait=True) + length > root.quota:
+    used = dir_size(root.path, ttl=5, wait=True) if root.quota else 0
+    if root.quota and used + (length or 0) > root.quota:
         raise DriveError("超過你的容量上限", 413)
-    if length > shutil.disk_usage(DRIVE_ROOT).free - (1 << 30):
+    free = shutil.disk_usage(DRIVE_ROOT).free - (1 << 30)
+    if length is not None and length > free:
         raise DriveError("硬碟空間不足", 507)
     name = clean_name(name)
     base, ext = os.path.splitext(name)
@@ -476,22 +482,32 @@ def upload(scope, vpath, name, length, rfile):
         break
     part = target + ".uploading"
     done = 0
+    ok = False
     try:
         with open(part, "wb") as f:
-            while done < length:
-                chunk = rfile.read(min(1 << 20, length - done))
+            while length is None or done < length:
+                want = min(1 << 20, length - done) if length is not None else 1 << 20
+                chunk = rfile.read(want)
                 if not chunk:
                     break
+                if limit and done + len(chunk) > limit:
+                    raise DriveError(f"檔案超過單檔上限（最多 {limit >> 30} GB）", 413)
+                if root.quota and used + done + len(chunk) > root.quota:
+                    raise DriveError("超過你的容量上限", 413)
+                if done + len(chunk) > free:
+                    raise DriveError("硬碟空間不足", 507)
                 f.write(chunk)
                 done += len(chunk)
-        if done != length:
+        if length is not None and done != length:
             raise DriveError("上傳中斷")
         os.replace(part, target)
+        ok = True
     finally:
-        if os.path.exists(part):
-            remove(part)
-        if done != length and os.path.exists(target):
-            remove(target)  # give the reserved name back after a failed upload
+        if not ok:  # give the reserved name back and drop the partial file
+            if os.path.exists(part):
+                remove(part)
+            if os.path.exists(target):
+                remove(target)
     invalidate(root.path)
     return {"ok": True, "name": os.path.basename(target)}
 

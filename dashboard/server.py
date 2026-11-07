@@ -28,6 +28,7 @@ import macstats
 import security
 import settings
 import portalauth
+import statefile
 import bugs
 import time
 import urllib.error
@@ -168,6 +169,31 @@ _cache = {}
 
 def log_event(who, text):
     EVENTS.appendleft({"t": time.time(), "who": who, "text": text})
+
+
+# State files report recovery/degradation once (statefile dedupes by path); never include file contents.
+def _members_state_lost():
+    log_event("系統", "⚠️ 成員名單讀取失敗且沒有可用備份：暫停自動套用權限（避免誤撤家人權限）")
+    notify.send("security", "⚠️ 成員名單檔損毀",
+                "members.json 無法讀取，也沒有可用備份。已暫停自動套用 Tailscale／AdGuard 權限，請到控制台成員頁確認。",
+                "/#members", urgent=True)
+
+
+def _shares_state_lost():
+    log_event("系統", "⚠️ 分享連結檔讀取失敗且沒有可用備份，現有連結暫時失效")
+    notify.send("service", "⚠️ 分享連結檔損毀", "shares.json 無法讀取且沒有可用備份，現有分享連結暫時無法使用。", "/#drive")
+
+
+def _portal_state_lost(name, recovered):
+    log_event("系統", f"⚠️ {name} 讀取失敗" + ("，已改用上一份備份" if recovered else "且沒有可用備份"))
+    if not recovered:
+        detail = ("專屬網頁密碼與照片備份金鑰可能失效" if name == "portal-auth.json"
+                  else "成員暱稱與頭像設定可能遺失")
+        notify.send("security", "⚠️ 專屬網頁設定檔損毀",
+                    f"{name} 無法讀取且沒有可用備份；{detail}，請到控制台確認。", "/#members", urgent=True)
+
+
+portalauth.set_state_event(_portal_state_lost)
 
 
 def run(cmd, timeout=10, input_text=None):
@@ -975,25 +1001,20 @@ def is_ts_login(login):
 
 
 def load_members():
-    try:
-        with open(PERMS_FILE) as f:
-            d = json.load(f)
-    except (OSError, ValueError):
-        d = {}
+    """Never raises: falls back to members.json.bak, and from there to an empty list (marked degraded)."""
+    d = statefile.load(
+        PERMS_FILE, {}, validate=lambda x: isinstance(x, dict) and isinstance(x.get("people", []), list),
+        on_recover=lambda: log_event("系統", "⚠️ 成員名單讀取失敗，已改用上一份備份"),
+        on_degraded=_members_state_lost)
     d["people"] = [normalize_person(p) for p in d.get("people") or []]
     d.setdefault("managed", False)
     return d
 
 
 def save_members(d):
-    """Replace members.json atomically: a reader never sees a half-written file (and thus no empty member list)."""
+    """Replace members.json atomically, keeping the previous readable copy as members.json.bak."""
     with _members_lock:
-        fd = os.open(PERMS_FILE + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w") as f:
-            json.dump(d, f, ensure_ascii=False, indent=1)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(PERMS_FILE + ".tmp", PERMS_FILE)
+        statefile.save(PERMS_FILE, d, indent=1)
 
 
 def person_active(p, now=None):
@@ -1111,6 +1132,8 @@ def apply_policy(reason, who="系統", force=False):
     """Push the ACL for whoever is active now. Skips the API call when nothing changed."""
     with _policy_lock:
         data = load_members()
+        if statefile.degraded(PERMS_FILE):  # an empty list must never turn into "revoke everyone"
+            raise RuntimeError("成員名單無法讀取且沒有可用備份，已暫停套用權限（避免誤撤家人權限）")
         st = ts_status()
         if not st.get("ok"):
             raise RuntimeError("讀不到 Tailscale 狀態")
@@ -1146,6 +1169,8 @@ def sync_agh_clients():
     """One AdGuard persistent client per member with personal filtering, keyed by their devices' tailnet IPs."""
     with _policy_lock:  # add/update/delete is not atomic; a concurrent save would duplicate or delete clients
         data = load_members()
+        if statefile.degraded(PERMS_FILE):  # don't delete per-member clients just because the list vanished
+            raise RuntimeError("成員名單無法讀取且沒有可用備份，已暫停同步 AdGuard 用戶端（避免誤刪）")
         devs = api_devices()
         want = {}
         for p in data["people"]:
@@ -2541,6 +2566,74 @@ def drive_usage():
             "mine_used": drive.dir_size(drive.user_dir(owner)) if drive.mounted() and os.path.isdir(drive.user_dir(owner)) else 0}
 
 
+def _upload_cap_text():
+    return f"檔案超過單檔上限（最多 {MAX_UPLOAD >> 30} GB）"
+
+
+class _BodyReader:
+    """The upload body as a plain readable stream, aborting once more than `limit` bytes arrive.
+
+    http.server does not decode `Transfer-Encoding: chunked`, so this handles it explicitly instead of
+    trusting a (possibly missing or false) Content-Length. Callers only use .read().
+    """
+
+    def __init__(self, h, limit):
+        self.rfile = h.rfile
+        self.chunked = "chunked" in (h.headers.get("Transfer-Encoding") or "").lower()
+        try:
+            self.length = None if self.chunked else int(h.headers.get("Content-Length"))
+        except (TypeError, ValueError):
+            self.length = None
+        self.limit = limit
+        self.done = 0
+        self._left = 0  # bytes left in the current chunk
+        self._eof = False
+
+    def _count(self, n):
+        if self.limit and self.done + n > self.limit:
+            raise drive.DriveError(_upload_cap_text(), 413)
+        self.done += n
+
+    def read(self, n):
+        if self._eof or n <= 0 or (self.length is not None and self.done >= self.length):
+            return b""
+        if not self.chunked:
+            if self.length is None:
+                raise drive.DriveError("缺少檔案大小（Content-Length）", 411)
+            chunk = self.rfile.read(min(n, self.length - self.done))
+            self._count(len(chunk))
+            return chunk
+        out = b""
+        while len(out) < n:
+            if self._left == 0:
+                line = self.rfile.readline(65536)
+                if not line:
+                    self._eof = True
+                    break
+                try:
+                    size = int(line.split(b";")[0].strip() or b"0", 16)
+                except ValueError:
+                    raise drive.DriveError("上傳格式錯誤", 400)
+                if size == 0:  # last chunk: consume the trailer section
+                    while True:
+                        tail = self.rfile.readline(65536)
+                        if not tail or tail in (b"\r\n", b"\n"):
+                            break
+                    self._eof = True
+                    break
+                self._left = size
+            chunk = self.rfile.read(min(n - len(out), self._left))
+            if not chunk:
+                self._eof = True
+                break
+            self._left -= len(chunk)
+            out += chunk
+            if self._left == 0:
+                self.rfile.readline(65536)  # CRLF that follows chunk data
+            self._count(len(chunk))
+        return out
+
+
 def _discard(rfile, n):
     """Read and throw away exactly n bytes, keeping at most 1 MB in memory (a Content-Length can be huge)."""
     left = n
@@ -2595,16 +2688,28 @@ def drive_route(h, scope, sub, q, method, who):
                 except (UnicodeEncodeError, UnicodeDecodeError):
                     pass
                 name = urllib.parse.unquote(raw)
-                n = int(h.headers.get("Content-Length", 0))
+                body = _BodyReader(h, MAX_UPLOAD)  # counts bytes itself; a header can be missing or lie
+                n = body.length  # None for chunked requests
+                if n is not None and (n < 0 or n > MAX_UPLOAD):
+                    h.close_connection = True
+                    error = _upload_cap_text() if n > MAX_UPLOAD else "檔案大小不正確"
+                    return h.send_json({"ok": False, "error": error}, 413 if n > MAX_UPLOAD else 400)
+                if n is None and not body.chunked:
+                    h.close_connection = True
+                    return h.send_json({"ok": False, "error": "缺少檔案大小（Content-Length）"}, 411)
                 if arg("mkdir") == "1":  # iPhone Shortcut backups: create the folder path on first upload
                     drive.mkdir_path(scope, arg("path"))
-                if arg("skip_existing") == "1":
+                if arg("skip_existing") == "1" and n is not None:
                     _, folder = drive.resolve(scope, arg("path"))
                     target = os.path.join(folder, drive.clean_name(name))
                     if os.path.isfile(target) and os.path.getsize(target) == n:
-                        _discard(h.rfile, n)
+                        _discard(body, n)
                         return h.send_json({"ok": True, "skipped": True, "name": os.path.basename(target)})
-                res = drive.upload(scope, arg("path"), name, n, h.rfile)
+                try:
+                    res = drive.upload(scope, arg("path"), name, n, body, limit=MAX_UPLOAD)
+                except Exception:
+                    h.close_connection = True  # the body was only partly read; don't reuse this connection
+                    raise
                 log_event(who, f"雲端上傳：{arg('path')}/{res['name']}")
                 return h.send_json(res)
             body = h.read_json()
@@ -2643,6 +2748,8 @@ def drive_route(h, scope, sub, q, method, who):
                 return h.send_json(res)
         h.send_json({"ok": False, "error": "unknown"}, 404)
     except drive.DriveError as e:
+        if method == "POST" and sub == "upload":
+            h.close_connection = True  # body may be partly unread; never reuse this connection
         h.send_json({"ok": False, "error": str(e)}, e.code)
     except PermissionError:
         h.send_json({"ok": False, "error": "Mac 沒有允許控制台存取外接硬碟（系統設定 → 隱私權與安全性 → 完整取用磁碟 → Python）"}, 503)
@@ -2762,18 +2869,14 @@ _share_fails = collections.defaultdict(list)
 
 
 def load_shares():
-    try:
-        with open(SHARES_FILE) as f:
-            return json.load(f)
-    except (OSError, ValueError):
-        return {}
+    return statefile.load(
+        SHARES_FILE, {}, validate=dict,
+        on_recover=lambda: log_event("系統", "⚠️ 分享連結檔讀取失敗，已改用上一份備份"),
+        on_degraded=_shares_state_lost)
 
 
 def save_shares(d):
-    fd = os.open(SHARES_FILE + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w") as f:
-        json.dump(d, f, ensure_ascii=False)
-    os.replace(SHARES_FILE + ".tmp", SHARES_FILE)
+    statefile.save(SHARES_FILE, d)
 
 
 def share_create(scope, creator, arg):

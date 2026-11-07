@@ -7,7 +7,6 @@ Stored apart from members.json (which the owner's editor rewrites wholesale):
 """
 import hashlib
 import hmac
-import json
 import os
 import re
 import shutil
@@ -15,6 +14,8 @@ import subprocess
 import tempfile
 import threading
 import time
+
+import statefile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AUTH_FILE = os.path.join(HERE, "portal-auth.json")
@@ -28,23 +29,28 @@ COLORS = ["#5e5ce6", "#0a84ff", "#32ade6", "#30d158", "#ff9f0a", "#ff375f", "#bf
 
 _lock = threading.Lock()
 _fails = {}   # login -> [timestamps]
+_state_event = None
+
+
+def set_state_event(fn):
+    """server.py registers a logger/pusher for "recovered from .bak" and "no usable copy"."""
+    global _state_event
+    _state_event = fn
+
+
+def _note(path, recovered):
+    if _state_event:
+        _state_event(os.path.basename(path), recovered)
 
 
 def _load(path, default):
-    try:
-        with open(path) as f:
-            return json.load(f)
-    except (OSError, ValueError):
-        return default
+    return statefile.load(path, default, dict,
+                          on_recover=lambda: _note(path, True),
+                          on_degraded=lambda: _note(path, False))
 
 
 def _save(path, obj):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = path + ".tmp"
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w") as f:
-        json.dump(obj, f, ensure_ascii=False)
-    os.replace(tmp, path)
+    statefile.save(path, obj)
 
 
 def _auth():
