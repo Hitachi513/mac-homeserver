@@ -92,14 +92,20 @@ def load(path, default=None, validate=None, on_recover=None, on_degraded=None):
         if backup is not _MISSING:
             _status[path] = "bak"
             if prev != "bak" and on_recover:
-                on_recover()
+                try:
+                    on_recover()
+                except Exception:  # a failing reporter must not break the fallback
+                    pass
             return backup
         # Both copies are unusable. A missing file on a fresh install is normal; a file that was
         # there and is now gone (or unreadable) is not, so it counts as degraded too.
         if why == "bad" or prev in ("main", "bak"):
             _status[path] = "degraded"
             if prev != "degraded" and on_degraded:
-                on_degraded()
+                try:
+                    on_degraded()
+                except Exception:  # still return the default even if logging/pushing fails
+                    pass
         else:
             _status[path] = "empty"
         return default
